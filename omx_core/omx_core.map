@@ -1,0 +1,14 @@
+LIBMFX_OMX_CORE {
+  global:
+    OMX_Init;
+    OMX_Deinit;
+    OMX_ComponentNameEnum;
+    OMX_GetHandle;
+    OMX_FreeHandle;
+    OMX_SetupTunnel;
+    OMX_GetContentPipe;
+    OMX_GetComponentsOfRole;
+    OMX_GetRolesOfComponent;
+  local:
+    *;
+};

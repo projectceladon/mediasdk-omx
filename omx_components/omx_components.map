@@ -1,0 +1,6 @@
+LIBMFX_OMX_COMPONENTS {
+  global:
+    MFX_OMX_ComponentInit;
+  local:
+    *;
+};
