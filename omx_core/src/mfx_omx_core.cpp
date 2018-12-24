@@ -631,7 +631,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_FreeHandle(
 
         for (; component_index+1 < g_ComponentsNum; ++component_index)
         {
-            memcpy_s(&(g_Components[component_index]), sizeof(g_Components[component_index]), &(g_Components[component_index+1]), sizeof(mfx_omx_component));
+            g_Components[component_index] = g_Components[component_index+1];
         }
         --g_ComponentsNum;
     }

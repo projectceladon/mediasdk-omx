@@ -1120,14 +1120,14 @@ void MfxOmxVaapiFrameAllocator::upload_yuv_to_surface(unsigned char *newImageBuf
 
     /* Y plane */
     for (row = 0; row < surface_image.height; row++) {
-        memcpy_s(y_dst, surface_image.width, y_src, surface_image.width);
+        std::copy(y_src, y_src + surface_image.width, y_dst);
         y_dst += surface_image.pitches[0];
         y_src += picture_width;
     }
 
     for (row = 0; row < surface_image.height / 2; row++)
     {
-        memcpy_s(u_dst, surface_image.width, u_src, surface_image.width);
+        std::copy(u_src, u_src + surface_image.width, u_dst);
         u_dst += surface_image.pitches[1];
         u_src += picture_width;
     }

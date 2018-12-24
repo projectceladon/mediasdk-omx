@@ -63,7 +63,7 @@ mfxStatus MfxOmxVppWrapp::Init(MfxOmxVppWrappParam *param)
 
     if (MFX_ERR_NONE == sts)
     {
-        MFX_OMX_COPY(m_allocator, *param->allocator);
+        m_allocator = *param->allocator;
         m_session = param->session;
 
         MFX_OMX_NEW(m_pVPP, MFXVideoVPP(*m_session));
@@ -152,8 +152,8 @@ mfxStatus MfxOmxVppWrapp::FillVppParams(mfxFrameInfo *frame_info, MfxOmxConversi
         MFX_OMX_ZERO_MEMORY(m_vppParam);
         m_vppParam.AsyncDepth = 1;
         m_vppParam.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY | MFX_IOPATTERN_OUT_VIDEO_MEMORY;
-        MFX_OMX_COPY(m_vppParam.vpp.In, *frame_info);
-        MFX_OMX_COPY(m_vppParam.vpp.Out, *frame_info);
+        m_vppParam.vpp.In = *frame_info;
+        m_vppParam.vpp.Out = *frame_info;
 
         switch (conversion)
         {
@@ -196,7 +196,7 @@ mfxStatus MfxOmxVppWrapp::AllocateOneSurface(void)
     {
         mfxFrameAllocRequest request;
         MFX_OMX_ZERO_MEMORY(request);
-        MFX_OMX_COPY(request.Info, m_vppParam.vpp.Out);
+        request.Info = m_vppParam.vpp.Out;
         request.NumFrameMin = 1;
         request.NumFrameSuggested = 1;
         request.Type = MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET | MFX_MEMTYPE_FROM_VPPOUT;
@@ -207,7 +207,7 @@ mfxStatus MfxOmxVppWrapp::AllocateOneSurface(void)
     if (MFX_ERR_NONE == sts)
     {
         MFX_OMX_ZERO_MEMORY(m_vppSrf[m_numVppSurfaces]);
-        MFX_OMX_COPY(m_vppSrf[m_numVppSurfaces].Info, m_vppParam.vpp.Out);
+        m_vppSrf[m_numVppSurfaces].Info = m_vppParam.vpp.Out;
         m_vppSrf[m_numVppSurfaces].Data.MemId = m_responses[m_numVppSurfaces].mids[0];
         m_numVppSurfaces++;
     }

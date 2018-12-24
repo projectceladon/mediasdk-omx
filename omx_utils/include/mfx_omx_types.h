@@ -56,7 +56,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-int memcpy_s(void *dest, size_t dmax, const void *src, size_t slen);
 int strcpy_s(char *dest, size_t dmax, const char *src);
 #ifdef __cplusplus
 }
@@ -230,13 +229,13 @@ struct MfxOmxParamsWrapper: public T
         T* dst = this;
         const T* src = &ref;
 
-        memcpy_s(dst, sizeof(T), src, sizeof(T));
+        *dst = *src;
         payload = ref.payload;
         if (!N) return *this;
 
         MFX_OMX_ZERO_MEMORY(ext_buf_ptrs);
-        MFX_OMX_COPY(ext_buf, ref.ext_buf);
-        MFX_OMX_COPY(ext_buf_idxmap, ref.ext_buf_idxmap);
+        std::copy(std::begin(ref.ext_buf), std::end(ref.ext_buf), std::begin(ext_buf));
+        std::copy(std::begin(ref.ext_buf_idxmap), std::end(ref.ext_buf_idxmap), std::begin(ext_buf_idxmap));
 
         this->ExtParam = ext_buf_ptrs;
         for (size_t i = 0; i < N; ++i)
@@ -254,7 +253,7 @@ struct MfxOmxParamsWrapper: public T
         T* dst = this;
         const T* src = &ref;
 
-        memcpy_s(dst, sizeof(T), src, sizeof(T));
+        *dst = *src;
         payload = NULL;
         if (!N) return *this;
 

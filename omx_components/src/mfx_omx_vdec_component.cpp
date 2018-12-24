@@ -774,8 +774,8 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetParameter(
                     {
                         MfxOmxAutoLock lock(m_decoderMutex);
                         OMX_PARAM_PORTDEFINITIONTYPE & port = m_pPorts[pParam->nPortIndex]->m_port_def;
-                        memcpy_s(pParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE), &port, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-                        memcpy_s(&m_Crops, sizeof(mfxFrameInfo), &(m_MfxVideoParams.mfx.FrameInfo), sizeof(mfxFrameInfo));
+                        *pParam = port;
+                        m_Crops = m_MfxVideoParams.mfx.FrameInfo;
 
                         MFX_OMX_AT__OMX_PARAM_PORTDEFINITIONTYPE(port);
                         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "GetParameter(ParamPortDefinition) nPortIndex %d, nBufferCountMin %d, nBufferCountActual %d, nBufferSize %d, nFrameWidth %d, nFrameHeight %d",
@@ -810,7 +810,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetParameter(
                             {
                                 if (video_reg->m_formats[i].eColorFormat == (m_bUseSystemMemory ? OMX_COLOR_FormatYUV420SemiPlanar : (OMX_COLOR_FORMATTYPE)OMX_INTEL_COLOR_Format_NV12))
                                 {
-                                    memcpy_s(&(formats[formats_num]), sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE), &(video_reg->m_formats[i]), sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE));
+                                    formats[formats_num] = video_reg->m_formats[i];
                                     formats_num++;
                                 }
                             }
@@ -824,7 +824,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetParameter(
 
                         if (format_index < formats_num)
                         {
-                            memcpy_s(pParam, sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE), &(pFormats[format_index]), sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE));
+                            *pParam = pFormats[format_index];
                             pParam->nIndex = format_index; // returning this value back
 
                             MFX_OMX_AT__OMX_VIDEO_PARAM_PORTFORMATTYPE(pFormats[format_index]);
@@ -910,9 +910,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetParameter(
                     if (IsIndexValid(static_cast<OMX_INDEXTYPE>(OMX_IndexParamIntelAVCDecodeSettings), pParam->nPortIndex))
                     {
                         MfxOmxVideoPortData* video_port = (MfxOmxVideoPortData*)(m_pPorts[pParam->nPortIndex]);
-
-                        memcpy_s(pParam, sizeof(OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS), &(video_port->m_intel_avc_decode_settings), sizeof(OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS));
-
+                        *pParam = video_port->m_intel_avc_decode_settings;
                         MFX_OMX_AT__OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS(video_port->m_intel_avc_decode_settings);
                     }
                     else omx_res = OMX_ErrorBadPortIndex;
@@ -1109,9 +1107,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::SetParameter(
                         if (!bIncorrectState || !IsPortEnabled(pParam->nPortIndex))
                         {
                             MfxOmxVideoPortData* video_port = (MfxOmxVideoPortData*)(m_pPorts[pParam->nPortIndex]);
-
-                            memcpy_s(&(video_port->m_intel_avc_decode_settings), sizeof(OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS), pParam, sizeof(OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS));
-
+                            video_port->m_intel_avc_decode_settings = *pParam;
                             MFX_OMX_AT__OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS(video_port->m_intel_avc_decode_settings);
                         }
                         else omx_res = OMX_ErrorInvalidState;
@@ -1283,7 +1279,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetConfig(
                     android::DescribeHDRStaticInfoParams *seiHDRStaticInfoParams =
                            static_cast<android::DescribeHDRStaticInfoParams *>(pComponentConfigStructure);
 
-                    memcpy_s(&(seiHDRStaticInfoParams->sInfo), sizeof(android::HDRStaticInfo), &m_SeiHDRStaticInfo, sizeof(android::HDRStaticInfo));
+                    seiHDRStaticInfoParams->sInfo = m_SeiHDRStaticInfo;
                 }
                 omx_res = OMX_ErrorNone;
                 break;
@@ -1332,8 +1328,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::SetConfig(
             android::DescribeHDRStaticInfoParams *seiHDRStaticInfoParams =
                 static_cast<android::DescribeHDRStaticInfoParams *>(pComponentConfigStructure);
 
-            memcpy_s(&m_SeiHDRStaticInfo, sizeof(android::HDRStaticInfo), &(seiHDRStaticInfoParams->sInfo), sizeof(android::HDRStaticInfo));
-
+            m_SeiHDRStaticInfo = seiHDRStaticInfoParams->sInfo;
             m_bIsSetHDRSEI = true;
 
             omx_res = OMX_ErrorNone;
@@ -1805,7 +1800,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::CommandPortEnable(OMX_U32 nPortIndex)
             m_InitState = MFX_INIT_DECODER;
             m_bChangeOutputPortSettings = false;
         }
-        memcpy_s(&m_Crops, sizeof(m_Crops), &(m_MfxVideoParams.mfx.FrameInfo), sizeof(mfxFrameInfo));
+        m_Crops = m_MfxVideoParams.mfx.FrameInfo;
         m_pOutPortInfo->bEnable = false;
         m_pCallbacks->EventHandler(m_self, m_pAppData, OMX_EventCmdComplete, (OMX_U32)OMX_CommandPortEnable, m_pOutPortDef->nPortIndex, NULL);
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Enabling output port completed");
@@ -2180,10 +2175,8 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
     {
         MFX_OMX_AUTO_TRACE("MFX_INIT_DECODE_HEADER");
 
-        mfxVideoParam oldParams;
-
         // saving parameters
-        memcpy_s(&oldParams, sizeof(oldParams), &m_MfxVideoParams, sizeof(mfxVideoParam));
+        mfxVideoParam oldParams = m_MfxVideoParams;
 
         m_extBuffers.push_back(reinterpret_cast<mfxExtBuffer*>(&m_signalInfo));
         m_MfxVideoParams.NumExtParam = m_extBuffers.size();
@@ -2272,7 +2265,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
         else
         {
             // copying parameters back on MFX_ERR_MORE_DATA and errors
-            memcpy_s(&m_MfxVideoParams, sizeof(m_MfxVideoParams), &oldParams, sizeof(mfxVideoParam));
+            m_MfxVideoParams = oldParams;
         }
      }
 
@@ -2326,8 +2319,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
         mfxFrameAllocator* pAllocator = NULL;
         MfxOmxVaapiFrameAllocator* pvaAllocator = NULL;
 
-        mfxFrameInfo allocFrameInfo;
-        memcpy_s(&allocFrameInfo, sizeof(m_MfxVideoParams), &(m_MfxVideoParams.mfx.FrameInfo), sizeof(mfxFrameInfo));
+        mfxFrameInfo allocFrameInfo = m_MfxVideoParams.mfx.FrameInfo;
         if (m_nMaxFrameWidth > allocFrameInfo.Width) allocFrameInfo.Width = m_nMaxFrameWidth;
         if (m_nMaxFrameHeight > allocFrameInfo.Height) allocFrameInfo.Height = m_nMaxFrameHeight;
 
@@ -2362,8 +2354,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
                 mfxFrameAllocRequest request;
                 MFX_OMX_ZERO_MEMORY(request);
                 MFX_OMX_ZERO_MEMORY(m_AllocResponse);
-                memcpy_s(&(request.Info), sizeof(request.Info), &(allocFrameInfo), sizeof(mfxFrameInfo));
-
+                request.Info = allocFrameInfo;
                 request.Type = MFX_MEMTYPE_EXTERNAL_FRAME | MFX_MEMTYPE_FROM_DECODE |
                                MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET |
                                MFX_OMX_MEMTYPE_GRALLOC;
@@ -2477,8 +2468,7 @@ bool MfxOmxVdecComponent::IsResolutionChanged(void)
     m_pBitstream = m_pOmxBitstream->GetFrameConstructor()->GetMfxBitstream();
     MFX_OMX_AUTO_TRACE_P(m_pBitstream);
     // saving parameters
-    mfxVideoParam newVideoParams;
-    memcpy_s(&newVideoParams, sizeof(newVideoParams), &m_MfxVideoParams, sizeof(mfxVideoParam));
+    mfxVideoParam newVideoParams = m_MfxVideoParams;
     // decoding header
     if (m_pDEC)
     {
@@ -2529,8 +2519,7 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
     m_pBitstream = m_pOmxBitstream->GetFrameConstructor()->GetMfxBitstream();
     MFX_OMX_AUTO_TRACE_P(m_pBitstream);
 
-    mfxVideoParam newVideoParams;
-    memcpy_s(&newVideoParams, sizeof(newVideoParams), &m_MfxVideoParams, sizeof(mfxVideoParam));
+    mfxVideoParam newVideoParams = m_MfxVideoParams;
 
     if (m_pDEC) mfx_res = m_pDEC->DecodeHeader(m_pBitstream, &newVideoParams);
     else return MFX_ERR_NULL_PTR;
@@ -2681,7 +2670,7 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
                 MFX_OMX_AUTO_TRACE_I32(m_nSurfacesNum);
                 {
                     MfxOmxAutoLock lock(m_decoderMutex);
-                    memcpy_s(&m_MfxVideoParams, sizeof(mfxVideoParam), &newVideoParams, sizeof(newVideoParams));
+                    m_MfxVideoParams = newVideoParams;
                     MfxVideoParams_2_PortsParams();
                 }
 
@@ -2698,9 +2687,9 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
         {
             {
                 MfxOmxAutoLock lock(m_decoderMutex);
-                memcpy_s(&m_MfxVideoParams, sizeof(mfxVideoParam), &newVideoParams, sizeof(newVideoParams));
+                m_MfxVideoParams = newVideoParams;
                 MfxVideoParams_2_PortsParams();
-                memcpy_s(&m_Crops, sizeof(mfxFrameInfo), &(m_MfxVideoParams.mfx.FrameInfo), sizeof(mfxFrameInfo));
+                m_Crops = m_MfxVideoParams.mfx.FrameInfo;
             }
             MFX_OMX_AUTO_TRACE_MSG("Sending OMX_EventPortSettingsChanged to OMAX client: OMX_IndexConfigCommonOutputCrop");
             MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Requesting change of output port crop");

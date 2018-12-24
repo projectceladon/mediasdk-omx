@@ -87,47 +87,47 @@ MfxOmxFrameAllocator::~MfxOmxFrameAllocator()
 {
 }
 
-mfxStatus MfxOmxFrameAllocator::CheckRequestType(mfxFrameAllocRequest *request)
+mfxStatus MfxOmxFrameAllocator::CheckRequestType(mfxFrameAllocRequest *pRequest)
 {
-    if (!request)  return MFX_ERR_NULL_PTR;
+    if (!pRequest)  return MFX_ERR_NULL_PTR;
 
     // check that Media SDK component is specified in request
-    if ((request->Type & MEMTYPE_FROM_MASK) != 0)
+    if ((pRequest->Type & MEMTYPE_FROM_MASK) != 0)
         return MFX_ERR_NONE;
     else
         return MFX_ERR_UNSUPPORTED;
 }
 
-mfxStatus MfxOmxFrameAllocator::AllocFrames(mfxFrameAllocRequest *request, mfxFrameAllocResponse *response)
+mfxStatus MfxOmxFrameAllocator::AllocFrames(mfxFrameAllocRequest *pRequest, mfxFrameAllocResponse *pResponse)
 {
     mfxStatus mfx_res = MFX_ERR_NONE;
 
-    if (!request || !response) return MFX_ERR_NULL_PTR;
-    if ((MFX_ERR_NONE == mfx_res) && (0 == request->NumFrameSuggested)) return MFX_ERR_MEMORY_ALLOC;
+    if (!pRequest || !pResponse) return MFX_ERR_NULL_PTR;
+    if ((MFX_ERR_NONE == mfx_res) && (0 == pRequest->NumFrameSuggested)) return MFX_ERR_MEMORY_ALLOC;
 
-    if (MFX_ERR_NONE == mfx_res) mfx_res = CheckRequestType(request);
+    if (MFX_ERR_NONE == mfx_res) mfx_res = CheckRequestType(pRequest);
     if (MFX_ERR_NONE == mfx_res)
     {
-        bool bDecoderResponse = (request->Type & MFX_MEMTYPE_EXTERNAL_FRAME) &&
-                                (request->Type & MFX_MEMTYPE_FROM_DECODE);
+        bool bDecoderResponse = (pRequest->Type & MFX_MEMTYPE_EXTERNAL_FRAME) &&
+                                (pRequest->Type & MFX_MEMTYPE_FROM_DECODE);
 
         if (bDecoderResponse && (0 != m_DecoderResponse.response.NumFrameActual))
         {
-            if (request->NumFrameSuggested > m_DecoderResponse.response.NumFrameActual)
+            if (pRequest->NumFrameSuggested > m_DecoderResponse.response.NumFrameActual)
             {
                 mfx_res = MFX_ERR_MEMORY_ALLOC;
             }
             else
             {
-                memcpy_s(response, sizeof(mfxFrameAllocResponse), &(m_DecoderResponse.response), sizeof(mfxFrameAllocResponse));
+                *pResponse = m_DecoderResponse.response;
             }
         }
         else
         {
-            mfx_res = AllocImpl(request, response);
+            mfx_res = AllocImpl(pRequest, pResponse);
             if (bDecoderResponse && MFX_ERR_NONE == mfx_res)
             {
-                memcpy_s(&(m_DecoderResponse.response), sizeof(m_DecoderResponse.response), response, sizeof(mfxFrameAllocResponse));
+                m_DecoderResponse.response = *pResponse;
             }
         }
         if ((MFX_ERR_NONE == mfx_res) && bDecoderResponse) ++(m_DecoderResponse.refcount);
@@ -136,11 +136,11 @@ mfxStatus MfxOmxFrameAllocator::AllocFrames(mfxFrameAllocRequest *request, mfxFr
     return mfx_res;
 }
 
-mfxStatus MfxOmxFrameAllocator::FreeFrames(mfxFrameAllocResponse *response)
+mfxStatus MfxOmxFrameAllocator::FreeFrames(mfxFrameAllocResponse *pResponse)
 {
-    if (!response) return MFX_ERR_NULL_PTR;
+    if (!pResponse) return MFX_ERR_NULL_PTR;
 
-    if (!memcmp(response, &(m_DecoderResponse.response), sizeof(mfxFrameAllocResponse)))
+    if (!memcmp(pResponse, &(m_DecoderResponse.response), sizeof(mfxFrameAllocResponse)))
     {
         if (!m_DecoderResponse.refcount) return MFX_ERR_UNKNOWN; // should not occur, just in case
 
@@ -149,5 +149,5 @@ mfxStatus MfxOmxFrameAllocator::FreeFrames(mfxFrameAllocResponse *response)
 
         MFX_OMX_ZERO_MEMORY(m_DecoderResponse);
     }
-    return ReleaseResponse(response);
+    return ReleaseResponse(pResponse);
 }

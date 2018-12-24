@@ -127,7 +127,7 @@ void OutputBitstream::PutRawBytes(mfxU8 const * begin, mfxU8 const * end)
     if (m_bufEnd - m_ptr < end - begin)
         throw EndOfBuffer();
 
-    memcpy_s(m_ptr, end - begin, begin, end - begin);
+    std::copy(begin, end, m_ptr);
     m_bitOff = 0;
     m_ptr += end - begin;
 

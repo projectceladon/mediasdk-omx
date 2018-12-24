@@ -183,9 +183,7 @@ mfxStatus MfxOmxFrameConstructor::LoadHeader(mfxU8* data, mfxU32 size, bool head
                 }
                 if (MFX_ERR_NONE == mfx_res)
                 {
-                    mfxU8* buf = m_BstHeader.Data + m_BstHeader.DataOffset + m_BstHeader.DataLength;
-
-                    memcpy_s(buf, m_BstHeader.MaxLength - (m_BstHeader.DataOffset + m_BstHeader.DataLength), data, size);
+                    std::copy(data, data + size, m_BstHeader.Data + m_BstHeader.DataOffset + m_BstHeader.DataLength);
                     m_BstHeader.DataLength += size;
                 }
                 if (MfxOmxBS_HeaderAwaiting == m_bs_state) m_bs_state = MfxOmxBS_HeaderCollecting;
@@ -206,9 +204,9 @@ mfxStatus MfxOmxFrameConstructor::LoadHeader(mfxU8* data, mfxU32 size, bool head
                 mfx_res = BstBufRealloc(m_BstHeader.DataLength);
                 if (MFX_ERR_NONE == mfx_res)
                 {
-                    mfxU8* buf = m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength;
-
-                    memcpy_s(buf, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength), m_BstHeader.Data + m_BstHeader.DataOffset, m_BstHeader.DataLength);
+                    std::copy(m_BstHeader.Data + m_BstHeader.DataOffset,
+                              m_BstHeader.Data + m_BstHeader.DataOffset + m_BstHeader.DataLength,
+                              m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength);
                     m_BstBuf.DataLength += m_BstHeader.DataLength;
                     m_nBstBufCopyBytes += m_BstHeader.DataLength;
                     mfx_omx_dump(m_BstHeader.Data + m_BstHeader.DataOffset, 1, m_BstHeader.DataLength, m_dbg_file_fc);
@@ -234,9 +232,7 @@ mfxStatus MfxOmxFrameConstructor::Load_None(mfxU8* data, mfxU32 size, mfxU64 pts
         mfx_res = BstBufRealloc(size);
         if (MFX_ERR_NONE == mfx_res)
         {
-            mfxU8* buf = m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength;
-
-            memcpy_s(buf, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength), data, size);
+            std::copy(data, data + size, m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength);
             m_BstBuf.DataLength += size;
             m_nBstBufCopyBytes += size;
         }
@@ -414,7 +410,9 @@ mfxStatus MfxOmxFrameConstructor::BstBufSync(void)
             mfx_res = BstBufMalloc(m_BstIn.DataLength);
             if (MFX_ERR_NONE == mfx_res)
             {
-                memcpy_s(m_BstBuf.Data, m_BstBuf.MaxLength, m_BstIn.Data + m_BstIn.DataOffset, m_BstIn.DataLength);
+                std::copy(m_BstIn.Data + m_BstIn.DataOffset,
+                          m_BstIn.Data + m_BstIn.DataOffset + m_BstIn.DataLength,
+                          m_BstBuf.Data);
                 m_BstBuf.DataOffset = 0;
                 m_BstBuf.DataLength = m_BstIn.DataLength;
                 m_BstBuf.TimeStamp  = m_BstIn.TimeStamp;
@@ -494,7 +492,9 @@ mfxStatus MfxOmxAVCFrameConstructor::SaveHeaders(mfxBitstream *pSPS, mfxBitstrea
                 return MFX_ERR_MEMORY_ALLOC;
             m_SPS.MaxLength = pSPS->DataLength;
         }
-        memcpy_s(m_SPS.Data, m_SPS.MaxLength, pSPS->Data + pSPS->DataOffset, pSPS->DataLength);
+        std::copy(pSPS->Data + pSPS->DataOffset,
+                  pSPS->Data + pSPS->DataOffset + pSPS->DataLength,
+                  m_SPS.Data);
         m_SPS.DataLength = pSPS->DataLength;
     }
     if (pPPS)
@@ -506,7 +506,9 @@ mfxStatus MfxOmxAVCFrameConstructor::SaveHeaders(mfxBitstream *pSPS, mfxBitstrea
                 return MFX_ERR_MEMORY_ALLOC;
             m_PPS.MaxLength = pPPS->DataLength;
         }
-        memcpy_s(m_PPS.Data, m_PPS.MaxLength, pPPS->Data + pPPS->DataOffset, pPPS->DataLength);
+        std::copy(pPPS->Data + pPPS->DataOffset,
+                  pPPS->Data + pPPS->DataOffset + pPPS->DataLength,
+                  m_PPS.Data);
         m_PPS.DataLength = pPPS->DataLength;
     }
     return MFX_ERR_NONE;
@@ -627,12 +629,12 @@ mfxStatus MfxOmxAVCFrameConstructor::LoadHeader(mfxU8* data, mfxU32 size, bool h
                 mfx_res = BstBufRealloc(m_SPS.DataLength + m_PPS.DataLength);
                 if (MFX_ERR_NONE == mfx_res)
                 {
-                    mfxU8* buf = m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength;
-                    memcpy_s(buf, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength), m_SPS.Data, m_SPS.DataLength);
-                    buf += m_SPS.DataLength;
-                    memcpy_s(buf, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength + m_SPS.DataLength), m_PPS.Data, m_PPS.DataLength);
+                    std::copy(m_SPS.Data, m_SPS.Data + m_SPS.DataLength, m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength);
+                    m_BstBuf.DataLength += m_SPS.DataLength;
 
-                    m_BstBuf.DataLength += m_SPS.DataLength + m_PPS.DataLength;
+                    std::copy(m_PPS.Data, m_PPS.Data + m_PPS.DataLength, m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength);
+                    m_BstBuf.DataLength += m_PPS.DataLength;
+
                     m_nBstBufCopyBytes += m_SPS.DataLength + m_PPS.DataLength;
                     mfx_omx_dump(m_SPS.Data, 1, m_SPS.DataLength, m_dbg_file_fc);
                     mfx_omx_dump(m_PPS.Data, 1, m_PPS.DataLength, m_dbg_file_fc);
@@ -996,8 +998,7 @@ mfxStatus MfxOmxVC1FrameConstructor::Load(mfxU8* data, mfxU32 size, mfxU64 pts, 
             }
             if (MFX_ERR_NONE == mfx_res)
             {
-                mfxU8* buf = m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength;
-                memcpy_s(buf, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength), data, size);
+                std::copy(data, data + size, m_BstBuf.Data + m_BstBuf.DataOffset + m_BstBuf.DataLength);
                 m_BstBuf.DataLength += size;
                 m_nBstBufCopyBytes += size;
             }
@@ -1016,7 +1017,7 @@ mfxStatus MfxOmxVC1FrameConstructor::Load(mfxU8* data, mfxU32 size, mfxU64 pts, 
                 BstSet32(0xC5000000, buf);
                 BstSet32(size, buf + 4);
 
-                memcpy_s(buf + 8, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength) - 8, data, size);
+                std::copy(data, data + size, buf + 8);
 
                 BstSet32(m_fr_info.CropH, buf + 8 + size);
                 BstSet32(m_fr_info.CropW, buf + 8 + size + 4);
@@ -1062,7 +1063,7 @@ mfxStatus MfxOmxVC1FrameConstructor::Load(mfxU8* data, mfxU32 size, mfxU64 pts, 
                     BstSet32(0x00000000, buf + 4);
                 }
 
-                memcpy_s(buf + addSize, m_BstBuf.MaxLength - (m_BstBuf.DataOffset + m_BstBuf.DataLength) - addSize, data, size);
+                std::copy(data, data + size, buf + addSize);
                 mfx_omx_dump(buf, 1, size + addSize, m_dbg_file_fc);
 
                 m_BstBuf.DataLength += size + addSize;
