@@ -150,7 +150,7 @@ mfxStatus MfxOmxSurfacesPool::PrepareSurface(OMX_BUFFERHEADERTYPE* pBuffer, mfxF
     }
     if (MFX_ERR_NONE == mfx_res)
     {
-        memcpy_s(&(pAddBufInfo->sSurface.Info), sizeof(pAddBufInfo->sSurface.Info), pFrameInfo, sizeof(mfxFrameInfo));
+        pAddBufInfo->sSurface.Info = *pFrameInfo;
         if (!MemId)
         {
             if (!m_nPitch) m_nPitch = GetPitch(pFrameInfo);
@@ -590,7 +590,7 @@ mfxStatus MfxOmxSurfacesPool::FillOutputErrorBuffer(OMX_VIDEO_ERROR_BUFFER* pErr
     {
         if ((*it)->index == nErrorBufIndex)
         {
-            memcpy_s(pErrorBuffer, sizeof(OMX_VIDEO_ERROR_BUFFER), (*it), sizeof(OMX_VIDEO_ERROR_BUFFER));
+            *pErrorBuffer = *(static_cast<OMX_VIDEO_ERROR_BUFFER*>(*it));
             memset((*it), 0, sizeof(OMX_VIDEO_ERROR_BUFFER));
             break;
         }

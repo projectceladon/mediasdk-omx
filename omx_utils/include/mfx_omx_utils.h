@@ -205,8 +205,6 @@ extern void mfx_omx_reset_bitstream(mfxBitstream* pBitstream);
 
 extern mfxStatus mfx_omx_get_metadatabuffer_info(mfxU8* data, mfxU32 size, MetadataBuffer* pInfo);
 
-extern int memcpy_s(void *dest, size_t dmax,  const void *src, size_t slen);
-
 extern int strcmp_s(const char *dest, size_t dmax, const char *src, int *indicator);
 
 extern int strcpy_s(char *dest, size_t dmax, const char *src);
@@ -327,7 +325,7 @@ T* MfxOmxRing<T>::Add(T* item)
     if (m_write_item) // there is already free space in the ring
     {
         // adding new item
-        memcpy_s(m_write_item, sizeof(T), item, sizeof(T));
+        *m_write_item = *item;
         added_item = m_write_item;
     }
     else // no free space, need to realloc
@@ -344,13 +342,13 @@ T* MfxOmxRing<T>::Add(T* item)
             {
                 for (; m_read_item && (m_write_item != m_read_item); --m_write_item)
                 {
-                    memcpy_s(m_write_item, sizeof(T), &(m_write_item[-1]), sizeof(T));
+                    *m_write_item = m_write_item[-1];
                 }
                 ++m_read_item;
             }
             ++m_ring_size;
             // adding new item
-            memcpy_s(m_write_item, sizeof(T), item, sizeof(T));
+            *m_write_item = *item;
             added_item = m_write_item;
         }
     }
@@ -375,7 +373,7 @@ T* MfxOmxRing<T>::Get(T* item)
 
     if (!item || !m_ring || !m_read_item) return NULL;
     freed_item = m_read_item;
-    memcpy_s(item, sizeof(T), m_read_item, sizeof(T));
+    *item = *m_read_item;
     --m_items_count;
     ++m_read_item;
     if ((size_t)(m_read_item - m_ring) >= (size_t)m_ring_size) m_read_item = m_ring;
@@ -391,7 +389,7 @@ T* MfxOmxRing<T>::Get(T* item, T& nil_item)
 {
     T* ret_item = Get(item);
 
-    if (!ret_item && item) memcpy_s(item, sizeof(T), &nil_item, sizeof(T));
+    if (!ret_item && item) *item = nil_item;
     return ret_item;
 }
 

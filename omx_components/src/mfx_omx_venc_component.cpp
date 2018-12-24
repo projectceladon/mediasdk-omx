@@ -557,8 +557,7 @@ mfxU32 MfxOmxVencComponent::QueryMaxMbPerSec(void)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
 
-    mfxVideoParam params;
-    MFX_OMX_COPY(params, m_MfxVideoParams);
+    mfxVideoParam params = m_MfxVideoParams;
 
     mfxExtEncoderCapability encCaps;
     MFX_OMX_ZERO_MEMORY(encCaps);
@@ -1380,7 +1379,7 @@ OMX_ERRORTYPE MfxOmxVencComponent::GetParameter(
                     {
                         OMX_PARAM_PORTDEFINITIONTYPE & port = m_pPorts[pParam->nPortIndex]->m_port_def;
                         omx_res = UpdateBufferCount(pParam->nPortIndex);
-                        memcpy_s(pParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE), &port, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+                        *pParam = port;
 
                         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "GetParameter(ParamPortDefinition) nPortIndex %d, nBufferCountMin %d, nBufferCountActual %d, nBufferSize %d, nFrameWidth %d, nFrameHeight %d",
                                             port.nPortIndex, port.nBufferCountMin, port.nBufferCountActual, port.nBufferSize, port.format.video.nFrameWidth, port.format.video.nFrameHeight);
@@ -1407,7 +1406,7 @@ OMX_ERRORTYPE MfxOmxVencComponent::GetParameter(
 
                         if (format_index < video_reg->m_formats_num)
                         {
-                            memcpy_s(pParam, sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE), &(video_reg->m_formats[format_index]), sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE));
+                            *pParam = video_reg->m_formats[format_index];
                             pParam->nIndex = format_index; // returning this value back
 
                             MFX_OMX_AT__OMX_VIDEO_PARAM_PORTFORMATTYPE(video_reg->m_formats[format_index]);
@@ -2927,11 +2926,13 @@ mfxStatus MfxOmxVencComponent::SendCodecData(void)
         mfx_res = m_pENC->GetVideoParam(&tmp_par);
         if (MFX_ERR_NONE == mfx_res && pBitstream)
         {
-            memcpy_s(pBitstream->Data + pBitstream->DataOffset + pBitstream->DataLength,
-                    pBitstream->MaxLength - (pBitstream->DataOffset + pBitstream->DataLength),
-                    vps.VPSBuffer,
-                    vps.VPSBufSize);
-            pBitstream->DataLength += vps.VPSBufSize;
+            if (vps.VPSBufSize <= pBitstream->MaxLength - (pBitstream->DataOffset + pBitstream->DataLength))
+            {
+                std::copy(vps.VPSBuffer, vps.VPSBuffer + vps.VPSBufSize, pBitstream->Data + pBitstream->DataOffset + pBitstream->DataLength);
+                pBitstream->DataLength += vps.VPSBufSize;
+            }
+            else
+                mfx_res = MFX_ERR_NOT_ENOUGH_BUFFER;
         }
     }
 
@@ -2956,20 +2957,27 @@ mfxStatus MfxOmxVencComponent::SendCodecData(void)
     }
     if (MFX_ERR_NONE == mfx_res && pBitstream)
     {
-        memcpy_s(pBitstream->Data + pBitstream->DataOffset + pBitstream->DataLength,
-                 pBitstream->MaxLength - (pBitstream->DataOffset + pBitstream->DataLength),
-                 spspps.SPSBuffer,
-                 spspps.SPSBufSize);
-        pBitstream->DataLength += spspps.SPSBufSize;
-
-        memcpy_s(pBitstream->Data + pBitstream->DataOffset + pBitstream->DataLength,
-                 pBitstream->MaxLength - (pBitstream->DataOffset + pBitstream->DataLength),
-                 spspps.PPSBuffer,
-                 spspps.PPSBufSize);
-        pBitstream->DataLength += spspps.PPSBufSize;
-
+        if (spspps.SPSBufSize <= pBitstream->MaxLength - (pBitstream->DataOffset + pBitstream->DataLength))
+        {
+            std::copy(spspps.SPSBuffer, spspps.SPSBuffer + spspps.SPSBufSize, pBitstream->Data + pBitstream->DataOffset + pBitstream->DataLength);
+            pBitstream->DataLength += spspps.SPSBufSize;
+        }
+        else
+            mfx_res = MFX_ERR_NOT_ENOUGH_BUFFER;
+    }
+    if (MFX_ERR_NONE == mfx_res && pBitstream)
+    {
+        if (spspps.PPSBufSize <= pBitstream->MaxLength - (pBitstream->DataOffset + pBitstream->DataLength))
+        {
+            std::copy(spspps.PPSBuffer, spspps.PPSBuffer + spspps.PPSBufSize, pBitstream->Data + pBitstream->DataOffset + pBitstream->DataLength);
+            pBitstream->DataLength += spspps.PPSBufSize;
+        }
+        else
+            mfx_res = MFX_ERR_NOT_ENOUGH_BUFFER;
+    }
+    if (MFX_ERR_NONE == mfx_res && pBitstream)
+    {
         pBitstream->DataFlag = MFX_BITSTREAM_SPSPPS;
-
         mfx_res = m_pBitstreams->QueueBufferForSending(pBitstream, NULL);
     }
 

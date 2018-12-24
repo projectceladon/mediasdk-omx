@@ -95,8 +95,8 @@ mfxStatus MfxOmxInputSurfacesPool::Init(
     }
     if (MFX_ERR_NONE == mfx_res)
     {
-        memcpy_s(&m_InputFramesInfo, sizeof(m_InputFramesInfo), pInputFramesInfo, sizeof(mfxFrameInfo));
-        memcpy_s(&m_MfxFramesInfo, sizeof(m_MfxFramesInfo), pMfxInfo, sizeof(mfxFrameInfo));
+        m_InputFramesInfo = *pInputFramesInfo;
+        m_MfxFramesInfo = *pMfxInfo;
 
         MFX_OMX_AT__mfxFrameInfo(m_InputFramesInfo);
         MFX_OMX_AT__mfxFrameInfo(m_MfxFramesInfo);
@@ -170,7 +170,7 @@ mfxStatus MfxOmxInputSurfacesPool::PrepareSurface(OMX_BUFFERHEADERTYPE* pBuffer)
     if (MFX_ERR_NONE == mfx_res)
     {
         MFX_OMX_ZERO_MEMORY(pBufInfo->sSurface);
-        MFX_OMX_COPY(pBufInfo->sSurface.Info, m_MfxFramesInfo);
+        pBufInfo->sSurface.Info = m_MfxFramesInfo;
         MFX_OMX_AUTO_TRACE_I32(pBufInfo->sSurface.Info.FourCC);
 
         nPitch = (mfxU16)(MFX_OMX_MEM_ALIGN(m_MfxFramesInfo.Width, align));
@@ -447,23 +447,21 @@ mfxStatus MfxOmxInputSurfacesPool::LoadSurfaceSW(mfxU8 *data, mfxU32 length, mfx
                     for (i = 0; i < nCropH/2; ++i)
                     {
                         // copying Y
-                        memcpy_s(srf->Data.Y + nCropX + (nCropY + i)*nPitch,
-                               nCropW,
-                               Y + nCropX + (nCropY + i)*nOPitch,
-                               nCropW);
+                        uint8_t *src = Y + nCropX + (nCropY + i)*nOPitch;
+                        uint8_t *dst = srf->Data.Y + nCropX + (nCropY + i)*nPitch;
+                        std::copy(src, src + nCropW, dst);
+
                         // copying UV
-                        memcpy_s(srf->Data.UV + nCropX + (nCropY/2 + i)*nPitch,
-                               nCropW,
-                               UV + nCropX + (nCropY/2 + i)*nOPitch,
-                               nCropW);
+                        src = UV + nCropX + (nCropY/2 + i)*nOPitch;
+                        dst = srf->Data.UV + nCropX + (nCropY/2 + i)*nPitch;
+                        std::copy(src, src + nCropW, dst);
                     }
                     for (i = nCropH/2; i < nCropH; ++i)
                     {
                         // copying Y (remained data)
-                        memcpy_s(srf->Data.Y + nCropX + (nCropY + i)*nPitch,
-                               nCropW,
-                               Y + nCropX + (nCropY + i)*nOPitch,
-                               nCropW);
+                        uint8_t *src = Y + nCropX + (nCropY + i)*nOPitch;
+                        uint8_t *dst = srf->Data.Y + nCropX + (nCropY + i)*nPitch;
+                        std::copy(src, src + nCropW, dst);
                     }
                 }
             }
@@ -486,10 +484,9 @@ mfxStatus MfxOmxInputSurfacesPool::LoadSurfaceSW(mfxU8 *data, mfxU32 length, mfx
 
                     for (i = 0; i < nCropH; ++i)
                     {
-                        memcpy_s(srf->Data.Y + nCropX + (nCropY + i) * 2 * nPitch,
-                               nCropW,
-                               Y + nCropX + (nCropY + i) * 2 * nOPitch,
-                               2 * nCropW);
+                        uint8_t *src = Y + nCropX + (nCropY + i) * 2 * nOPitch;
+                        uint8_t *dst = srf->Data.Y + nCropX + (nCropY + i) * 2 * nPitch;
+                        std::copy(src, src + 2 * nCropW, dst);
                     }
                 }
             }
@@ -547,7 +544,7 @@ mfxStatus MfxOmxInputSurfacesPool::LoadSurfaceHW(mfxU8 *data, mfxU32 length, mfx
     if (MFX_ERR_NONE == mfx_res)
     {
         MFX_OMX_ZERO_MEMORY(mfxSurface->Data);
-        MFX_OMX_COPY(mfxSurface->Info, m_MfxFramesInfo);
+        mfxSurface->Info = m_MfxFramesInfo;
         mfxSurface->Data.MemId = mid;
 
         MFX_OMX_AUTO_TRACE_P(mid);

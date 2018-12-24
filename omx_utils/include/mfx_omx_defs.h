@@ -158,9 +158,6 @@ extern "C" {
 #define MFX_OMX_ZERO_MEMORY(_obj) \
     { memset(&(_obj), 0, sizeof(_obj)); }
 
-#define MFX_OMX_COPY(_dst, _src) \
-    { memcpy_s(&(_dst), sizeof(_dst), &(_src), sizeof(_src)); }
-
 #define MFX_OMX_MAX(A, B) (((A) > (B)) ? (A) : (B))
 
 #define MFX_OMX_MIN(A, B) (((A) < (B)) ? (A) : (B))

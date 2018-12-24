@@ -422,9 +422,9 @@ OMX_ERRORTYPE omx2mfx_config(
         mfxctrl.payload->Data[index++] = 0xFF;
     }
     mfxctrl.payload->Data[index++] = (16 + omxparams.nUserDataSize) % 256; // PayloadSize w/o PayloadType and PayloadSize bytes where is 16 (UUID size)
-    memcpy_s(&(mfxctrl.payload->Data[index]), mfxctrl.payload->BufSize - index, &SEI_UUID[0], 16); // copy UUID
+    std::copy(std::begin(SEI_UUID), std::end(SEI_UUID), &(mfxctrl.payload->Data[index])); // copy UUID
     index += 16;
-    memcpy_s(&(mfxctrl.payload->Data[index]), mfxctrl.payload->BufSize - index, omxparams.pUserData,omxparams.nUserDataSize); // copy userdata
+    std::copy(omxparams.pUserData, omxparams.pUserData + omxparams.nUserDataSize, &(mfxctrl.payload->Data[index])); // copy userdata
 
     MFX_OMX_AUTO_TRACE_I32(index);
 

@@ -208,30 +208,30 @@ void mfx_omx_dump_RGB_from_RGB4_data(FILE* f, mfxFrameData* pData, mfxFrameInfo*
 #endif
 }
 
-void mfx_omx_copy_nv12(mfxFrameSurface1* dst, mfxFrameSurface1* src)
+void mfx_omx_copy_nv12(mfxFrameSurface1* pDst, mfxFrameSurface1* pSrc)
 {
     mfxU32 i;
+    const mfxU32 width = std::min(pSrc->Info.Width, pDst->Info.Width);
+    const mfxU32 height = std::min(pSrc->Info.Height, pDst->Info.Height);
 
-    for (i = 0; i < src->Info.Height/2; ++i)
+    for (i = 0; i < height/2; ++i)
     {
         // copying Y
-        memcpy_s(dst->Data.Y + i * dst->Data.Pitch,
-               dst->Info.Width,
-               src->Data.Y + i * src->Data.Pitch,
-               src->Info.Width);
+        uint8_t *src = pSrc->Data.Y + i * pSrc->Data.Pitch;
+        uint8_t *dst = pDst->Data.Y + i * pDst->Data.Pitch;
+        std::copy(src, src + width, dst);
+
         // copying UV
-        memcpy_s(dst->Data.UV + i * dst->Data.Pitch,
-               dst->Info.Width,
-               src->Data.UV + i * src->Data.Pitch,
-               src->Info.Width);
+        src = pSrc->Data.UV + i * pSrc->Data.Pitch;
+        dst = pDst->Data.UV + i * pDst->Data.Pitch;
+        std::copy(src, src + width, dst);
     }
-    for (i = src->Info.Height/2; i < src->Info.Height; ++i)
+    for (i = height/2; i < height; ++i)
     {
         // copying Y (remained data)
-        memcpy_s(dst->Data.Y + i * dst->Data.Pitch,
-               dst->Info.Width,
-               src->Data.Y + i * src->Data.Pitch,
-               src->Info.Width);
+        uint8_t *src = pSrc->Data.Y + i * pSrc->Data.Pitch;
+        uint8_t *dst = pDst->Data.Y + i * pDst->Data.Pitch;
+        std::copy(src, src + width, dst);
     }
 }
 
@@ -366,294 +366,6 @@ bool operator ==(NalUnit const & left, NalUnit const & right)
 bool operator !=(NalUnit const & left, NalUnit const & right)
 {
     return !(left == right);
-}
-
-/*------------------------------------------------------------------------------*/
-
-void
-mem_prim_move (void *dest, const void *src, uint32_t len)
-{
-
-#define wsize   sizeof(uint32_t)
-#define wmask   (wsize - 1)
-
-    uint8_t *dp = (uint8_t *)dest;
-    const uint8_t *sp = (uint8_t *)src;
-
-    uint32_t tsp;
-
-    /*
-     * Determine if we need to copy forward or backward (overlap)
-     */
-    if ((uintptr_t)dp < (uintptr_t)sp) {
-        /*
-         * Copy forward.
-         */
-
-        /*
-         * get a working copy of src for bit operations
-         */
-        tsp = (uintptr_t)sp;
-
-        /*
-         * Try to align both operands.  This cannot be done
-         * unless the low bits match.
-         */
-        if ((tsp | (uintptr_t)dp) & wmask) {
-            /*
-             * determine how many bytes to copy to align operands
-             */
-            if ((tsp ^ (uintptr_t)dp) & wmask || len < wsize) {
-                tsp = len;
-
-            } else {
-                tsp = wsize - (tsp & wmask);
-            }
-
-            len -= tsp;
-
-            /*
-             * make the alignment
-             */
-            do {
-                *dp++ = *sp++;
-            } while (--tsp);
-        }
-
-        /*
-         * Now copy, then mop up any trailing bytes.
-         */
-        tsp = len / wsize;
-
-        if (tsp > 0) {
-
-            do {
-                *(uint32_t *)dp = *(uint32_t *)sp;
-
-                sp += wsize;
-                dp += wsize;
-            } while (--tsp);
-        }
-
-        /*
-         * copy over the remaining bytes and we're done
-         */
-        tsp = len & wmask;
-
-        if (tsp > 0) {
-            do {
-                *dp++ = *sp++;
-            } while (--tsp);
-        }
-
-    } else {
-        /*
-         * This section is used to copy backwards, to handle any
-         * overlap.  The alignment requires (tps&wmask) bytes to
-         * align.
-         */
-
-        /*
-         * go to end of the memory to copy
-         */
-        sp += len;
-        dp += len;
-
-        /*
-         * get a working copy of src for bit operations
-         */
-        tsp = (uintptr_t)sp;
-
-        /*
-         * Try to align both operands.
-         */
-        if ((tsp | (uintptr_t)dp) & wmask) {
-
-            if ((tsp ^ (uintptr_t)dp) & wmask || len <= wsize) {
-                tsp = len;
-            } else {
-                tsp &= wmask;
-            }
-
-            len -= tsp;
-
-            /*
-             * make the alignment
-             */
-            do {
-                *--dp = *--sp;
-            } while (--tsp);
-        }
-
-        /*
-         * Now copy in uint32_t units, then mop up any trailing bytes.
-         */
-        tsp = len / wsize;
-
-        if (tsp > 0) {
-            do {
-                sp -= wsize;
-                dp -= wsize;
-
-                *(uint32_t *)dp = *(uint32_t *)sp;
-            } while (--tsp);
-        }
-
-        /*
-         * copy over the remaining bytes and we're done
-         */
-        tsp = len & wmask;
-        if (tsp > 0) {
-            tsp = len & wmask;
-            do {
-                *--dp = *--sp;
-            } while (--tsp);
-        }
-    }
-
-    return;
-}
-
-
-/*------------------------------------------------------------------------------*/
-
-void
-mem_prim_set (void *dest, uint32_t len, uint8_t value)
-{
-    uint8_t *dp;
-    uint32_t count;
-    uint32_t lcount;
-
-    uint32_t *lp;
-    uint32_t value32;
-
-    count = len;
-
-    dp = (uint8_t*)dest;
-
-    value32 = value | (value << 8) | (value << 16) | (value << 24);
-
-    /*
-     * First, do the few bytes to get uint32_t aligned.
-     */
-    for (; count && ( (uintptr_t)dp & (sizeof(uint32_t)-1) ); count--) {
-        *dp++ = value;
-    }
-
-    /*
-     * Then do the uint32_ts, unrolled the loop for performance
-     */
-    lp = (uint32_t *)dp;
-    lcount = count >> 2;
-
-    while (lcount != 0) {
-
-        switch (lcount) {
-        /*
-         * Here we do blocks of 8.  Once the remaining count
-         * drops below 8, take the fast track to finish up.
-         */
-        default:
-            *lp++ = value32; *lp++ = value32; *lp++ = value32; *lp++ = value32;
-            *lp++ = value32; *lp++ = value32; *lp++ = value32; *lp++ = value32;
-            *lp++ = value32; *lp++ = value32; *lp++ = value32; *lp++ = value32;
-            *lp++ = value32; *lp++ = value32; *lp++ = value32; *lp++ = value32;
-            lcount -= 16;
-            break;
-
-        case 15:  *lp++ = value32;
-        case 14:  *lp++ = value32;
-        case 13:  *lp++ = value32;
-        case 12:  *lp++ = value32;
-        case 11:  *lp++ = value32;
-        case 10:  *lp++ = value32;
-        case 9:  *lp++ = value32;
-        case 8:  *lp++ = value32;
-
-        case 7:  *lp++ = value32;
-        case 6:  *lp++ = value32;
-        case 5:  *lp++ = value32;
-        case 4:  *lp++ = value32;
-        case 3:  *lp++ = value32;
-        case 2:  *lp++ = value32;
-        case 1:  *lp++ = value32;
-            lcount = 0;
-            break;
-        }
-    } /* end while */
-
-
-    dp = (uint8_t *)lp;
-
-    /*
-     * compute the number of remaining bytes
-     */
-    count &= (sizeof(uint32_t)-1);
-
-    /*
-     * remaining bytes
-     */
-    for (; count; dp++, count--) {
-        *dp = value;
-    }
-
-    return;
-}
-
-/*------------------------------------------------------------------------------*/
-
-int
-memcpy_s (void *dest, size_t dmax, const void *src, size_t smax)
-{
-    uint8_t *dp;
-    const uint8_t  *sp;
-
-    dp = (uint8_t*)dest;
-    sp = (uint8_t*)src;
-
-    if (dp == NULL) {
-        return RCNEGATE(ESNULLP);
-    }
-
-    if (dmax == 0) {
-        return RCNEGATE(ESZEROL);
-    }
-
-    if (dmax > RSIZE_MAX_MEM) {
-        return RCNEGATE(ESLEMAX);
-    }
-
-    if (smax == 0) {
-        mem_prim_set(dp, dmax, 0);
-        return RCNEGATE(ESZEROL);
-    }
-
-    if (smax > dmax) {
-        mem_prim_set(dp, dmax, 0);
-        return RCNEGATE(ESLEMAX);
-    }
-
-    if (sp == NULL) {
-        mem_prim_set(dp, dmax, 0);
-        return RCNEGATE(ESNULLP);
-    }
-
-
-    /*
-     * overlap is undefined behavior, do not allow
-     */
-    if( ((dp > sp) && (dp < (sp+smax))) ||
-        ((sp > dp) && (sp < (dp+dmax))) ) {
-        mem_prim_set(dp, dmax, 0);
-        return RCNEGATE(ESOVRLP);
-    }
-
-    /*
-     * now perform the copy
-     */
-    mem_prim_move(dp, sp, smax);
-
-    return RCNEGATE(EOK);
 }
 
 /*------------------------------------------------------------------------------*/

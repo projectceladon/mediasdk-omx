@@ -426,7 +426,7 @@ OMX_ERRORTYPE MfxOmxComponent::SendCommand(
         case OMX_CommandMarkBuffer:
             MFX_OMX_AUTO_TRACE_MSG("OMX_CommandMarkBuffer");
             command.m_port_number = nParam;
-            memcpy_s(&(command.m_mark), sizeof(command.m_mark), pCmdData, sizeof(OMX_MARKTYPE));
+            command.m_mark = *(reinterpret_cast<OMX_MARKTYPE*>(pCmdData));
             break;
         default:
             MFX_OMX_AUTO_TRACE_MSG("unknown command");
@@ -777,7 +777,7 @@ OMX_ERRORTYPE MfxOmxComponent::Set_PortDefinition(
     if (OMX_ErrorNone == omx_res)
     {
         // setting video parameters
-        memcpy_s(pPortVideoFormat, sizeof(OMX_VIDEO_PORTDEFINITIONTYPE), pVideoFormat, sizeof(OMX_VIDEO_PORTDEFINITIONTYPE));
+        *pPortVideoFormat = *pVideoFormat;
 
         mfx_omx_adjust_port_definition(&(m_pPorts[port]->m_port_def), NULL,
                                        m_bOnFlySurfacesAllocation,
