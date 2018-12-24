@@ -97,7 +97,7 @@ MfxOmxVdecComponent::MfxOmxVdecComponent(OMX_ERRORTYPE &error,
     m_pSurfaces(NULL),
     m_pFreeSyncPoint(NULL),
     m_nLockedSurfacesNum(0),
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     m_bIsSetHDRSEI(false),
 #endif
     m_dbg_decin(NULL),
@@ -111,7 +111,7 @@ MfxOmxVdecComponent::MfxOmxVdecComponent(OMX_ERRORTYPE &error,
     MFX_OMX_ZERO_MEMORY(m_adaptivePlayback);
     MFX_OMX_ZERO_MEMORY(m_decVideoProc);
     MFX_OMX_ZERO_MEMORY(m_AllocResponse);
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     MFX_OMX_ZERO_MEMORY(m_SeiHDRStaticInfo);
 #endif
 }
@@ -1271,7 +1271,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetConfig(
                 omx_res = OMX_ErrorNone;
                 break;
             }
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
         // NOTE: may be used for sending HDR SEI
         case MfxOmx_IndexGoogleDescribeHDRStaticInfo:
             {
@@ -1324,7 +1324,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::SetConfig(
             omx_res = OMX_ErrorNone;
             break;
         }
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
         case MfxOmx_IndexGoogleDescribeHDRStaticInfo:
         {
             MFX_OMX_AUTO_TRACE_MSG("MfxOmx_IndexGoogleDescribeHDRStaticInfo");
@@ -2229,7 +2229,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
         {
             m_colorAspects.UpdateBitsreamColorAspects(m_signalInfo);
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
             UpdateHdrStaticInfo();
 #endif
 
@@ -2994,7 +2994,7 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
                 MFX_OMX_AUTO_TRACE_I32(pOutSurface->Data.Locked);
                 MFX_OMX_AUTO_TRACE_I64(pOutSurface->Data.TimeStamp);
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
                 UpdateHdrStaticInfo();
 #endif
 
@@ -3122,7 +3122,7 @@ void MfxOmxVdecComponent::AsyncThread(void)
 
 /*------------------------------------------------------------------------------*/
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
 void MfxOmxVdecComponent::UpdateHdrStaticInfo()
 {
     MFX_OMX_AUTO_TRACE_FUNC();

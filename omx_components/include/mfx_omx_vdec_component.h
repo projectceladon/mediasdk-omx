@@ -156,7 +156,7 @@ protected:
     virtual mfxStatus GetCurrentHeaders(mfxBitstream *pSPS, mfxBitstream *pPPS);
     virtual mfxU16 GetAsyncDepth(void);
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     void UpdateHdrStaticInfo();
 #endif
 
@@ -207,7 +207,7 @@ protected:
 
     MfxOmxColorAspectsWrapper m_colorAspects;
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     android::HDRStaticInfo m_SeiHDRStaticInfo;
     bool m_bIsSetHDRSEI;
 #endif

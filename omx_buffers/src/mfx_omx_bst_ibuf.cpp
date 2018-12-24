@@ -22,7 +22,7 @@
 #include "mfx_omx_avc_bitstream.h"
 #include "mfx_omx_avc_nal_spl.h"
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
 #include "mfx_omx_hevc_bitstream.h"
 #endif
 
@@ -33,7 +33,7 @@
 
 /*------------------------------------------------------------------------------*/
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
 // possible markers of coded sloces NAL UNITs
 const std::vector<mfxU32> MfxOmxHEVCFrameConstructor::NAL_UT_CODED_SLICEs = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 18, 19, 20, 21 };
 #endif
@@ -564,7 +564,7 @@ mfxStatus MfxOmxAVCFrameConstructor::FindHeaders(mfxU8* data, mfxU32 size, bool 
                 if (MFX_ERR_NONE != mfx_res) return mfx_res;
                 bFoundPps = true;
             }
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
             while (isSEI(code))
             {
                 mfxBitstream sei = {};
@@ -608,7 +608,7 @@ mfxStatus MfxOmxAVCFrameConstructor::LoadHeader(mfxU8* data, mfxU32 size, bool h
         mfx_res = FindHeaders(data, size, bFoundSps, bFoundPps, bFoundSei);
         if (MFX_ERR_NONE == mfx_res && bFoundSps && bFoundPps)
         {
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
             m_bs_state = bFoundSei ? MfxOmxBS_HeaderObtained : MfxOmxBS_HeaderWaitSei;
 #else
             m_bs_state = MfxOmxBS_HeaderObtained;
@@ -646,7 +646,7 @@ mfxStatus MfxOmxAVCFrameConstructor::LoadHeader(mfxU8* data, mfxU32 size, bool h
         // As soon as we are receving first non header data we are stopping collecting header
         m_bs_state = MfxOmxBS_HeaderObtained;
     }
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     else if (MfxOmxBS_HeaderWaitSei == m_bs_state)
     {
         mfx_res = FindHeaders(data, size, bFoundSps, bFoundPps, bFoundSei);
@@ -870,7 +870,7 @@ mfxI32 MfxOmxHEVCFrameConstructor::FindStartCode(mfxU8 * (&pb), mfxU32 & size, m
 
 /*------------------------------------------------------------------------------*/
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
 mfxStatus MfxOmxHEVCFrameConstructor::SaveSEI(mfxBitstream *pSEI)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
@@ -907,7 +907,9 @@ mfxStatus MfxOmxHEVCFrameConstructor::SaveSEI(mfxBitstream *pSEI)
             MFX_OMX_AUTO_TRACE_MSG("Calling HEVCHeadersBitstream.GetSEI() for SEI");
             MFX_OMX_AUTO_TRACE_U32(sei_name);
 
-            bitStream.GetSEI(&sei, sei_name);
+            MFX_OMX_TRY_AND_CATCH(
+                bitStream.GetSEI(&sei, sei_name),
+                sei.NumBit = 0);
             if (sei.Type == sei_name && sei.NumBit > 0)
             {
                 // replace sei
