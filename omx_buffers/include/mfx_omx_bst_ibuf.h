@@ -23,12 +23,12 @@
 
 #include <memory>
 
-#ifdef HDR_SEI_PAYLOAD
-#include <map>
-#endif
-
 #include "mfx_omx_utils.h"
 #include "mfx_omx_buffers.h"
+
+#ifdef ENABLE_READ_SEI
+#include <map>
+#endif
 
 /*------------------------------------------------------------------------------*/
 
@@ -85,7 +85,7 @@ public:
     // detect interlaced content
     virtual bool IsSetInterlaceFlag(bool * bInterlaced) = 0;
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     // get saved SEI (right now only for HEVC 10 bit SeiHDRStaticInfo)
     virtual mfxPayload* GetSei(mfxU32 /*type*/) = 0;
 #endif
@@ -138,7 +138,7 @@ public:
         return false;
     }
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     // get saved SEI (right now only for HEVC 10 bit SeiHDRStaticInfo)
     virtual mfxPayload* GetSei(mfxU32 /*type*/) {return nullptr;}
 #endif
@@ -204,7 +204,7 @@ public:
     // detect interlaced content
     virtual bool IsSetInterlaceFlag(bool * bInterlaced);
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     // get saved SEI (right now only for HEVC 10 bit SeiHDRStaticInfo)
     virtual mfxPayload* GetSei(mfxU32 /*type*/) {return nullptr;}
 #endif
@@ -213,7 +213,7 @@ protected: // functions
     virtual mfxStatus Load(mfxU8* data, mfxU32 size, mfxU64 pts, bool b_header, bool bCompleteFrame);
     virtual mfxStatus LoadHeader(mfxU8* data, mfxU32 size, bool b_header);
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     // save current SEI
     virtual mfxStatus SaveSEI(mfxBitstream */*pSEI*/) {return MFX_ERR_NONE;}
 #endif
@@ -223,7 +223,7 @@ protected: // functions
     virtual bool      isSPS(mfxI32 code) {return NAL_UT_AVC_SPS == code;}
     virtual bool      isPPS(mfxI32 code) {return NAL_UT_AVC_PPS == code;}
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     virtual bool      isSEI(mfxI32 /*code*/) {return false;}
     virtual bool      IsNeedWaitSEI(mfxI32 /*code*/) {return false;}
 #endif
@@ -253,7 +253,7 @@ public:
     {
         MFX_OMX_AUTO_TRACE_FUNC();
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
         for (auto &sei : SEIMap)
         {
             MFX_OMX_FREE(sei.second.Data);
@@ -261,7 +261,7 @@ public:
 #endif
     }
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     // get saved SEI (right now only for HEVC 10 bit SeiHDRStaticInfo)
     virtual mfxPayload* GetSei(mfxU32 type);
 
@@ -272,7 +272,7 @@ public:
 protected: // functions
     virtual mfxI32 FindStartCode(mfxU8 * (&pb), mfxU32 & size, mfxI32 & startCodeSize);
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     // save current SEI
     virtual mfxStatus SaveSEI(mfxBitstream *pSEI);
 #endif
@@ -280,7 +280,7 @@ protected: // functions
     virtual bool   isSPS(mfxI32 code) {return NAL_UT_HEVC_SPS == code;}
     virtual bool   isPPS(mfxI32 code) {return NAL_UT_HEVC_PPS == code;}
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     virtual bool   isSEI(mfxI32 code) {return NAL_UT_HEVC_SEI == code;}
     virtual bool   IsNeedWaitSEI(mfxI32 code) { return NAL_UT_CODED_SLICEs.end() == std::find(NAL_UT_CODED_SLICEs.begin(), NAL_UT_CODED_SLICEs.end(), code);}
 #endif
@@ -289,7 +289,7 @@ protected: // variables
     const static mfxU32 NAL_UT_HEVC_SPS = 33;
     const static mfxU32 NAL_UT_HEVC_PPS = 34;
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef ENABLE_READ_SEI
     const static mfxU32 NAL_UT_HEVC_SEI = 39;
     const static std::vector<mfxU32> NAL_UT_CODED_SLICEs;
 

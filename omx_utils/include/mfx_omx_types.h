@@ -117,7 +117,7 @@ enum
     MFX_OMX_VIDEO_HEVCProfileMain10    = OMX_VIDEO_HEVCProfileMain10
 };
 
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
 enum
 {
     MFX_OMX_VIDEO_HEVCProfileMain10HDR10 = OMX_VIDEO_HEVCProfileMain10HDR10

@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef HDR_SEI_PAYLOAD
 #include "spl/mfx_omx_hevc_bitstream.h"
 
 using namespace AVCParser;
@@ -36,18 +35,25 @@ void HEVCHeadersBitstream::GetSEI(mfxPayload *spl, mfxU32 type)
 {
     if (nullptr == spl)
        return;
+
+    if ((mfxI32)BytesLeft() <= 0) // not enough bitstream
+        throw AVC_exception(MFX_ERR_UNDEFINED_BEHAVIOR);
+
     mfxU32 code;
     mfxPayload currentSEI;
 
     hevcGetNBits(m_pbs, m_bitOffset, 8, code);
+
     while ((mfxI32)BytesLeft() > 0)
     {
         ParseSEI(&currentSEI);
+
         if (type == currentSEI.Type)
         {
             spl->Type = currentSEI.Type;
             spl->NumBit = currentSEI.NumBit;
-            if ((currentSEI.NumBit / 8) > BytesLeft())
+
+            if ((currentSEI.NumBit / 8) > BytesLeft()) // corrupted stream
                 throw AVC_exception(MFX_ERR_UNDEFINED_BEHAVIOR);
 
             if (nullptr != spl->Data)
@@ -61,11 +67,11 @@ void HEVCHeadersBitstream::GetSEI(mfxPayload *spl, mfxU32 type)
         }
         else // skip SEI data
         {
-            if ((currentSEI.NumBit / 8) > BytesLeft())
+            if ((currentSEI.NumBit / 8) > BytesLeft())// corrupted stream
                 throw AVC_exception(MFX_ERR_UNDEFINED_BEHAVIOR);
 
             mfxU8 tmp;
-            for (mfxU32 i = 0; i < currentSEI.NumBit / 8; i++)
+            for (mfxU32 i = 0; i < (currentSEI.NumBit / 8); i++)
             {
                 hevcGetNBits(m_pbs, m_bitOffset, 8, tmp);
             }
@@ -81,36 +87,45 @@ void HEVCHeadersBitstream::ParseSEI(mfxPayload *spl)
     mfxU32 code;
     mfxI32 payloadType = 0;
 
-    hevcNextBits(m_pbs, m_bitOffset, 8, code);
-    while (code  ==  0xFF)
+    while ((mfxI32)BytesLeft() > 0)
     {
         /* fixed-pattern bit string using 8 bits written equal to 0xFF */
+        hevcNextBits(m_pbs, m_bitOffset, 8, code);
+        if (0xFF != code)
+            break;
         hevcGetNBits(m_pbs, m_bitOffset, 8, code);
         payloadType += 255;
-        hevcNextBits(m_pbs, m_bitOffset, 8, code);
     }
-    mfxI32 last_payload_type_byte;
-    hevcGetNBits(m_pbs, m_bitOffset, 8, last_payload_type_byte);
-    payloadType += last_payload_type_byte;
+
+    if ((mfxI32)BytesLeft() > 0)
+    {
+        mfxI32 last_payload_type_byte = 0;    //Ipp32u integer using 8 bits
+        hevcGetNBits(m_pbs, m_bitOffset, 8, last_payload_type_byte);
+        payloadType += last_payload_type_byte;
+    }
 
     mfxU32 payloadSize = 0;
-    hevcNextBits(m_pbs, m_bitOffset, 8, code);
-    while( code  ==  0xFF )
+
+    while((mfxI32)BytesLeft() > 0)
     {
         /* fixed-pattern bit string using 8 bits written equal to 0xFF */
+        hevcNextBits(m_pbs, m_bitOffset, 8, code);
+        if (0xFF != code)
+            break;
         hevcGetNBits(m_pbs, m_bitOffset, 8, code);
         payloadSize += 255;
-        hevcNextBits(m_pbs, m_bitOffset, 8, code);
     }
-    mfxI32 last_payload_size_byte;
-    hevcGetNBits(m_pbs, m_bitOffset, 8, last_payload_size_byte);
-    payloadSize += last_payload_size_byte;
+
+    if ((mfxI32)BytesLeft() > 0)
+    {
+        mfxI32 last_payload_size_byte = 0;    //Ipp32u integer using 8 bits
+        hevcGetNBits(m_pbs, m_bitOffset, 8, last_payload_size_byte);
+        payloadSize += last_payload_size_byte;
+    }
 
     spl->NumBit = payloadSize * 8;
     spl->Type = payloadType;
 }
 
 }; // namespace HEVCParser
-
-#endif // #ifdef HDR_SEI_PAYLOAD
 

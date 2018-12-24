@@ -21,7 +21,6 @@
 #ifndef __MFX_OMX_HEVC_BITSTREAM_H_
 #define __MFX_OMX_HEVC_BITSTREAM_H_
 
-#ifdef HDR_SEI_PAYLOAD
 #include "mfx_omx_avc_bitstream.h"
 
 namespace HEVCParser
@@ -50,6 +49,4 @@ protected:
 
 } // namespace HEVCParser
 
-#endif // #ifdef HDR_SEI_PAYLOAD
-
-#endif // __MFX_OMX_AVC_BITSTREAM_H_
+#endif // __MFX_OMX_HEVC_BITSTREAM_H_

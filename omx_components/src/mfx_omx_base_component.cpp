@@ -118,7 +118,7 @@ const ext_index gExtIndexParams[] = {
       static_cast<OMX_INDEXTYPE>(MfxOmx_IndexGoogleDescribeColorAspects),
       OMX_ErrorNone
     },
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     {
       (char*)"OMX.google.android.index.describeHDRStaticInfo",
       static_cast<OMX_INDEXTYPE>(MfxOmx_IndexGoogleDescribeHDRStaticInfo),

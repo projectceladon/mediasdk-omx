@@ -123,7 +123,7 @@ const MfxOmxIntTable g_h265_profiles[] =
 {
     { OMX_VIDEO_HEVCProfileMain, MFX_PROFILE_HEVC_MAIN },
     { OMX_VIDEO_HEVCProfileMain10, MFX_PROFILE_HEVC_MAIN10 }
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     , { OMX_VIDEO_HEVCProfileMain10HDR10, MFX_PROFILE_HEVC_MAIN10 }
 #endif
 };

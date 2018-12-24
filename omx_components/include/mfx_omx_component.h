@@ -55,7 +55,7 @@ enum MfxOmxExtensionIndex
     MfxOmx_IndexGooglePrependSPSPPSToIDRFrames,     // OMX.google.android.index.prependSPSPPSToIDRFrames
     MfxOmx_IndexGoogleStoreANWBufferInMetaData,     // OMX.google.android.index.storeANWBufferInMetadata
     MfxOmx_IndexGoogleDescribeColorAspects,         // OMX.google.android.index.describeColorAspects
-#ifdef HDR_SEI_PAYLOAD
+#ifdef HEVC10HDR_SUPPORT
     MfxOmx_IndexGoogleDescribeHDRStaticInfo,        // OMX.google.android.index.describeHDRStaticInfo
 #endif
     MfxOmx_IndexIntelHRDParameter,                  // OMX.intel.index.hrdparameter
