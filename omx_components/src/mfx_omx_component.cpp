@@ -344,7 +344,7 @@ OMX_ERRORTYPE MfxOmxComponent::GetComponentVersion(
     // returning information on the component
     if (OMX_ErrorNone == omx_res)
     {
-        strcpy_s(pComponentName, OMX_MAX_STRINGNAME_SIZE, m_pRegData->m_name);
+        strcpy(pComponentName, m_pRegData->m_name);
         pComponentVersion->nVersion = MFX_OMX_VERSION;
         pSpecVersion->nVersion = OMX_VERSION;
     }
@@ -1075,7 +1075,7 @@ OMX_ERRORTYPE MfxOmxComponent::ComponentRoleEnum(
 
     if ((NULL != cRole) && (nIndex < m_pRegData->m_roles_num))
     {
-        strcpy_s((char*)cRole, OMX_MAX_STRINGNAME_SIZE, m_pRegData->m_roles[nIndex]);
+        strcpy((char*)cRole, m_pRegData->m_roles[nIndex]);
     }
     else
     {

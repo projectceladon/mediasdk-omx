@@ -1307,7 +1307,7 @@ OMX_ERRORTYPE MfxOmxVencComponent::EmptyThisBuffer(
     MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "EmptyThisBuffer(%p) nFilledLen %d, nTimeStamp %lld, nFlags 0x%x", pBuffer, pBuffer->nFilledLen, pBuffer->nTimeStamp, pBuffer->nFlags);
 
     char name[25];
-    snprintf_s_p(name, sizeof(name), "OMX surface:%p", pBuffer);
+    snprintf(name, sizeof(name), "OMX surface:%p", pBuffer);
     ATRACE_ASYNC_BEGIN(name, (intptr_t)pBuffer);
     OMX_ERRORTYPE omx_res = MfxOmxComponent::EmptyThisBuffer(pBuffer);
 
@@ -1336,7 +1336,7 @@ OMX_ERRORTYPE MfxOmxVencComponent::FillThisBuffer(
     MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "FillThisBuffer(%p) nAllocLen %d", pBuffer, pBuffer->nAllocLen);
 
     char name[25];
-    snprintf_s_p(name, sizeof(name), "OMX bitstream:%p", pBuffer);
+    snprintf(name, sizeof(name), "OMX bitstream:%p", pBuffer);
     ATRACE_ASYNC_BEGIN(name, (intptr_t)pBuffer);
 
     OMX_ERRORTYPE omx_res = MfxOmxComponent::FillThisBuffer(pBuffer);
@@ -1840,7 +1840,7 @@ void MfxOmxVencComponent::BufferReleased(
     if (id == m_pSurfaces->GetPoolId())
     {
         char name[25];
-        snprintf_s_p(name, sizeof(name), "OMX surface:%p", pBuffer);
+        snprintf(name, sizeof(name), "OMX surface:%p", pBuffer);
         ATRACE_ASYNC_END(name, (intptr_t)pBuffer);
 
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "EmptyBufferDone(%p)", pBuffer);
@@ -1849,7 +1849,7 @@ void MfxOmxVencComponent::BufferReleased(
     else if (id == m_pBitstreams->GetPoolId())
     {
         char name[25];
-        snprintf_s_p(name, sizeof(name), "OMX bitstream:%p", pBuffer);
+        snprintf(name, sizeof(name), "OMX bitstream:%p", pBuffer);
         ATRACE_ASYNC_END(name, (intptr_t)pBuffer);
 
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "FillBufferDone(%p) nFilledLen %d, nTimeStamp %lld, nFlags 0x%x",
