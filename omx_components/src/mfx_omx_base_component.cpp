@@ -504,7 +504,7 @@ OMX_ERRORTYPE MFX_OMX_GetExtensionIndex(
         bool bIsFound = false;
         for (mfxU32 i = 0; i < MFX_OMX_GET_ARRAY_SIZE(gExtIndexParams); ++i)
         {
-            if (!strncmp(cParameterName, gExtIndexParams[i].ParamString, strnlen_s(gExtIndexParams[i].ParamString, OMX_MAX_STRINGNAME_SIZE)))
+            if (!strncmp(cParameterName, gExtIndexParams[i].ParamString, strlen(gExtIndexParams[i].ParamString)))
             {
                 *pIndexType = gExtIndexParams[i].Index;
                 omx_res = gExtIndexParams[i].Ret;

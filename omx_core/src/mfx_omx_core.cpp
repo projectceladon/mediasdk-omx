@@ -157,11 +157,9 @@ static void mfx_omx_get_component_roles(mfx_omx_component_reg* reg)
     OMX_COMPONENTTYPE component;
     mfx_omx_so_handle so_handle = NULL;
 
-    int b_not_hw = 0;
+    bool b_hw = strncmp(reg->m_component_so, g_MfxOmxHwSoName, MFX_OMX_MAX_PATH) == 0;
 
-    strcmp_s(reg->m_component_so, MFX_OMX_MAX_PATH, g_MfxOmxHwSoName, &b_not_hw);
-
-    if (!b_not_hw)
+    if (b_hw)
     {
         if (!g_soHandleHw) g_soHandleHw = mfx_omx_so_load(reg->m_component_so);
         so_handle = g_soHandleHw;
@@ -218,7 +216,7 @@ static void mfx_omx_get_component_roles(mfx_omx_component_reg* reg)
             component.ComponentDeInit(&component);
         }
     }
-    if (b_not_hw) mfx_omx_so_free(so_handle);
+    if (!b_hw) mfx_omx_so_free(so_handle);
 }
 
 static void mfx_omx_free_component_roles(mfx_omx_component_reg* reg)
@@ -253,20 +251,21 @@ static OMX_ERRORTYPE mfx_omx_read_config_file(void)
 
     if (!config_file)
     {
-        snprintf_s_ss(config_filename, MFX_OMX_MAX_PATH, "%s/%s", MFX_OMX_CONFIG_FILE_PATH, MFX_OMX_CONFIG_FILE_NAME);
+        snprintf(config_filename, MFX_OMX_MAX_PATH, "%s/%s", MFX_OMX_CONFIG_FILE_PATH, MFX_OMX_CONFIG_FILE_NAME);
         config_file = fopen(config_filename, "r");
 
     }
     if (config_file)
     {
-        char line[MAX_LINE_LENGTH] = {0}, *str = NULL;
+        char line[MAX_LINE_LENGTH+1] = {}, *str = NULL;
         char *name = NULL, *value = NULL, *str_flags = NULL;
         size_t line_length = 0, n = 0;//, i = 0;
         mfx_omx_component_reg *components = NULL;
 
         while (NULL != (str = fgets(line, MAX_LINE_LENGTH, config_file)))
         {
-            line_length = n = strnlen_s(line, MAX_LINE_LENGTH);
+            line[MAX_LINE_LENGTH] = '\0';
+            line_length = n = strlen(line);
             for(; n && strchr("\n\r", line[n-1]); --n)
             {
                 line[n-1] = '\0';
@@ -277,10 +276,14 @@ static OMX_ERRORTYPE mfx_omx_read_config_file(void)
 
             // getting name
             mfx_omx_get_field(line, &str, &n);
-            //if (!n && ((str+n+1 - line) < line_length)) continue;
             if (!n || !(str[n]))
             {
                 // line is empty or field is the last one
+                continue;
+            }
+            if (n >= OMX_MAX_STRINGNAME_SIZE)
+            {
+                // too long name
                 continue;
             }
             if('#' == str[0])
@@ -289,14 +292,17 @@ static OMX_ERRORTYPE mfx_omx_read_config_file(void)
                 // it is needed when config file is created by script
                 continue;
             }
-
             name = str;
             name[n] = '\0';
             MFX_OMX_AUTO_TRACE_S(name);
 
             // getting value
             mfx_omx_get_field(str+n+1, &str, &n);
-            if (!n) continue;
+            if (!n || n >= MFX_OMX_MAX_PATH)
+            {
+                // line is empty or too long name
+                continue;
+            }
             value = str;
             value[n] = '\0';
             MFX_OMX_AUTO_TRACE_S(value);
@@ -318,8 +324,8 @@ static OMX_ERRORTYPE mfx_omx_read_config_file(void)
             {
                 g_ComponentsRegistry = components;
 
-                strcpy_s(g_ComponentsRegistry[g_ComponentsRegistryNum].m_component_name, OMX_MAX_STRINGNAME_SIZE, name);
-                strcpy_s(g_ComponentsRegistry[g_ComponentsRegistryNum].m_component_so, MFX_OMX_MAX_PATH, value);
+                strcpy(g_ComponentsRegistry[g_ComponentsRegistryNum].m_component_name, name);
+                strcpy(g_ComponentsRegistry[g_ComponentsRegistryNum].m_component_so, value);
                 g_ComponentsRegistry[g_ComponentsRegistryNum].m_component_flags =
                     (str_flags)? strtol(str_flags, NULL, 16): (OMX_U32)MFX_OMX_COMPONENT_FLAGS_NONE;
 
@@ -454,7 +460,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_ComponentNameEnum(
         }
         else
         {
-            strcpy_s(cComponentName, OMX_MAX_STRINGNAME_SIZE, g_ComponentsRegistry[nIndex].m_component_name);
+            strcpy(cComponentName, g_ComponentsRegistry[nIndex].m_component_name);
             MFX_OMX_AUTO_TRACE_S(cComponentName);
         }
     }
@@ -496,7 +502,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_GetHandle(
     {
         omx_res = OMX_ErrorInvalidComponentName;
     }
-    if ((OMX_ErrorNone == omx_res) && (strnlen_s(cComponentName, OMX_MAX_STRINGNAME_SIZE + 1) > OMX_MAX_STRINGNAME_SIZE))
+    if ((OMX_ErrorNone == omx_res) && (strlen(cComponentName) > OMX_MAX_STRINGNAME_SIZE))
     {
         omx_res = OMX_ErrorInvalidComponentName;
     }
@@ -723,7 +729,7 @@ OMX_API OMX_ERRORTYPE OMX_GetComponentsOfRole(
                             if (num_comps <= *pNumComps)
                                 omx_res = OMX_ErrorBadParameter;
                             else
-                                strcpy_s((char*)compNames[*pNumComps], OMX_MAX_STRINGNAME_SIZE, g_ComponentsRegistry[component_index].m_component_name);
+                                strcpy((char*)compNames[*pNumComps], g_ComponentsRegistry[component_index].m_component_name);
                         }
                         ++(*pNumComps);
                         break;
@@ -807,7 +813,7 @@ OMX_API OMX_ERRORTYPE OMX_GetRolesOfComponent(
                             omx_res = OMX_ErrorBadParameter;
                             break;
                         }
-                        strcpy_s((char*)roles[i], OMX_MAX_STRINGNAME_SIZE, g_ComponentsRegistry[component_index].m_component_roles[i]);
+                        strcpy((char*)roles[i], g_ComponentsRegistry[component_index].m_component_roles[i]);
                         ++(*pNumRoles);
                     }
                 }

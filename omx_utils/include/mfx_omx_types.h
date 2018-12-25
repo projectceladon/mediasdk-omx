@@ -53,15 +53,6 @@
     #define MFX_PRODUCT_VERSION "0.0.000.0000"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-int strcpy_s(char *dest, size_t dmax, const char *src);
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
-
 /*------------------------------------------------------------------------------*/
 
 typedef void* mfx_omx_so_handle;

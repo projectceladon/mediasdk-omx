@@ -25,24 +25,6 @@
 #include "mfx_omx_types.h"
 #include "mfx_omx_vm.h"
 
-#define RCNEGATE(x)  ( -(x) )
-#define RSIZE_MAX_MEM      ( 256UL << 20 )     /* 256MB */
-#define RSIZE_MAX_STR      ( 4UL << 10 )      /* 4KB */
-
-typedef enum {
-    ESNULLP  = 400,
-    ESZEROL  = 401,
-    ESLEMIN  = 402,
-    ESLEMAX  = 403,
-    ESOVRLP  = 404,
-    ESEMPTY  = 405,
-    ESNOSPC  = 406,
-    ESUNTERM = 407,
-    ESNODIFF = 408,
-    ESNOTFND = 409,
-    EOK = 0
-} safec_errors;
-
 /*------------------------------------------------------------------------------*/
 
 // The functions below are necessary to avoid warnings :
@@ -204,16 +186,6 @@ extern bool mfx_omx_are_framerates_equal(
 extern void mfx_omx_reset_bitstream(mfxBitstream* pBitstream);
 
 extern mfxStatus mfx_omx_get_metadatabuffer_info(mfxU8* data, mfxU32 size, MetadataBuffer* pInfo);
-
-extern int strcmp_s(const char *dest, size_t dmax, const char *src, int *indicator);
-
-extern int strcpy_s(char *dest, size_t dmax, const char *src);
-
-extern size_t strnlen_s(const char *dest, size_t dmax);
-
-int snprintf_s_ss(char *dest, size_t dmax, const char *format, const char *s1, const char *s2);
-
-int snprintf_s_p(char *dest, size_t dmax, const char *format, void *ptr);
 
 /*------------------------------------------------------------------------------*/
 
