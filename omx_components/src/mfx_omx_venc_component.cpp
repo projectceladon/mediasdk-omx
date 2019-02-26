@@ -957,6 +957,9 @@ OMX_ERRORTYPE MfxOmxVencComponent::ValidateConfig(
         {
             sts = m_pENC->Query(config.mfxparams, config.mfxparams);
             MFX_OMX_LOG("m_pENC->Query returned %d", sts);
+
+            if (MFX_WRN_INCOMPATIBLE_VIDEO_PARAM == sts)
+                MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Query returned MFX_WRN_INCOMPATIBLE_VIDEO_PARAM, some params may changed/skipped");
         }
 
         if ((MFX_ERR_NONE != sts) && (MFX_WRN_INCOMPATIBLE_VIDEO_PARAM != sts))
