@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Intel Corporation
+// Copyright (c) 2013-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -765,13 +765,6 @@ mfxStatus AVCHeadersBitstream::GetVUIParam(AVCSeqParamSet *sps)
         sps->log2_max_mv_length_horizontal = (mfxU8) GetVLCElement(false);
         sps->log2_max_mv_length_vertical = (mfxU8) GetVLCElement(false);
         sps->num_reorder_frames = (mfxU8) GetVLCElement(false);
-
-        mfxI32 value = GetVLCElement(false);
-        if (value < (mfxI32)sps->num_ref_frames || value < 0)
-        {
-            return MFX_ERR_UNDEFINED_BEHAVIOR;
-        }
-
         sps->max_dec_frame_buffering = (mfxU8) GetVLCElement(false);
     }
     return ps;
