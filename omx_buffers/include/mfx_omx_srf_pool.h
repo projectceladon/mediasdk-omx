@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -75,6 +75,8 @@ public:
     virtual mfxStatus SetHeaderErrors(mfxFrameSurface1* pSurfaces, mfxU32 isHeaderCorrupted);
 
     virtual void SetMaxErrorCount(mfxU32 maxErrors);
+
+    mfxU16 GetNumSubmittedSurfaces();
 
 protected: // functions
     mfxStatus SetCommonErrors(MfxOmxBufferInfo* pAddBufInfo);

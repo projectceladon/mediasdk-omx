@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -746,6 +746,18 @@ mfxU16 MfxOmxSurfacesPool::GetPitch(mfxFrameInfo* pFrameInfo)
     return nPitch;
 }
 
+/*------------------------------------------------------------------------------*/
+
 void MfxOmxSurfacesPool::SetMaxErrorCount(mfxU32 maxErrors){
     m_maxErrorCount = maxErrors;
+}
+
+/*------------------------------------------------------------------------------*/
+
+mfxU16 MfxOmxSurfacesPool::GetNumSubmittedSurfaces()
+{
+    mfxU16 numSubmittedSurf = m_BuffersToBeSent.GetItemsCount();
+    if (m_pCurrentBufferToBeSent)
+        numSubmittedSurf++;
+    return numSubmittedSurf;
 }

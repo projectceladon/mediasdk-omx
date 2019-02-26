@@ -2144,7 +2144,8 @@ mfxU16 MfxOmxVdecComponent::GetAsyncDepth(void)
     if ((MFX_IMPL_HARDWARE == MFX_IMPL_BASETYPE(m_Implementation)) &&
         ((MFX_CODEC_AVC == m_MfxVideoParams.mfx.CodecId) ||
          (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId) ||
-         (MFX_CODEC_VP8 == m_MfxVideoParams.mfx.CodecId)))
+         (MFX_CODEC_VP8 == m_MfxVideoParams.mfx.CodecId) ||
+         (MFX_CODEC_VP9 == m_MfxVideoParams.mfx.CodecId)))
         asyncDepth = 1;
     else
         asyncDepth = 0;
@@ -2897,8 +2898,12 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
 
     //VP9 and MPEG2 decoders able to flush without work surface
     bool bIsFlushingWithoutWorkSurf = ((m_MfxVideoParams.mfx.CodecId == MFX_CODEC_VP9 || m_MfxVideoParams.mfx.CodecId == MFX_CODEC_MPEG2) && NULL == m_pBitstream);
+    //application can't submit without SyncOperation() more than AsyncDepth frames
+    bool bCanSubmit = (m_MfxVideoParams.AsyncDepth == 0 || m_MfxVideoParams.AsyncDepth > m_pSurfaces->GetNumSubmittedSurfaces());
 
-    while (((MFX_ERR_NONE == mfx_res) || (MFX_ERR_MORE_SURFACE == mfx_res)) && (m_InitState > MFX_INIT_DECODE_HEADER) && CheckBitstream(m_pBitstream))
+    while (((MFX_ERR_NONE == mfx_res) || (MFX_ERR_MORE_SURFACE == mfx_res)) &&
+           (m_InitState > MFX_INIT_DECODE_HEADER) &&
+           CheckBitstream(m_pBitstream) && bCanSubmit)
     {
         MFX_OMX_AUTO_TRACE("Decoding loop");
 
@@ -3032,6 +3037,8 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
                         }
                     }
                 }
+                if (m_MfxVideoParams.AsyncDepth != 0 && m_MfxVideoParams.AsyncDepth <= m_pSurfaces->GetNumSubmittedSurfaces())
+                    bCanSubmit = false;
             }
         }
         else if (MFX_ERR_INCOMPATIBLE_VIDEO_PARAM == mfx_res)
