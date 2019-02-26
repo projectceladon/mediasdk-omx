@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Intel Corporation
+// Copyright (c) 2013-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef __MFX_OMX_AVC_UTILS_H__
-#define __MFX_OMX_AVC_UTILS_H__
+#ifndef __MFX_OMX_BS_UTILS_H__
+#define __MFX_OMX_BS_UTILS_H__
 
 #include <exception>
 #include "mfxstructures.h"
@@ -55,4 +55,4 @@ private:
 };
 
 
-#endif // __MFX_OMX_AVC_UTILS_H__
+#endif // __MFX_OMX_BS_UTILS_H__
