@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -136,28 +136,17 @@ OMX_ERRORTYPE MfxOmxVencComponent::Init(void)
     if (OMX_ErrorNone == error)
     {
         Reset();
-    }
-    if (OMX_ErrorNone == error)
-    {
-        m_pDevice = mfx_omx_create_dev();
-        if (m_pDevice) sts = m_pDevice->DevInit();
-        else sts = MFX_ERR_DEVICE_FAILED;
-        if (MFX_ERR_NONE != sts)
-        {
-            MFX_OMX_DELETE(m_pDevice);
-        }
-        MFX_OMX_AUTO_TRACE_P(m_pDevice);
-    }
-    if (OMX_ErrorNone == error)
-    { // prepare Media SDK
+
+        // prepare Media SDK
         sts = m_Session.Init(m_Implementation, &g_MfxVersion);
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Session.Init sts %d, version %d.%d", sts, g_MfxVersion.Major, g_MfxVersion.Minor);
 
         if (MFX_ERR_NONE == sts)
         {
             sts = m_Session.QueryIMPL(&m_Implementation);
-            MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Session.QueryIMPL sts %d, impl %d", sts, m_Implementation);
+            MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Session.QueryIMPL sts %d, impl 0x%04x", sts, m_Implementation);
         }
+
         // encoder creation
         if (MFX_ERR_NONE == sts)
         {
@@ -166,7 +155,21 @@ OMX_ERRORTYPE MfxOmxVencComponent::Init(void)
         }
         if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
     }
-    if (m_pDevice && (OMX_ErrorNone == error))
+    if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
+    {
+        // driver initialization
+        m_pDevice = mfx_omx_create_dev();
+        if (m_pDevice) sts = m_pDevice->DevInit();
+        else sts = MFX_ERR_DEVICE_FAILED;
+
+        if (MFX_ERR_NONE != sts)
+        {
+            MFX_OMX_DELETE(m_pDevice);
+            error = OMX_ErrorHardware;
+        }
+        MFX_OMX_AUTO_TRACE_P(m_pDevice);
+    }
+    if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
     {
         sts = m_pDevice->InitMfxSession(&m_Session);
         if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
@@ -192,7 +195,7 @@ OMX_ERRORTYPE MfxOmxVencComponent::Init(void)
         {
             sts = m_pSurfaces->SetBuffersCallback(this);
         }
-        if (MFX_ERR_NONE == sts)
+        if ((MFX_ERR_NONE == sts) && (MFX_IMPL_SOFTWARE != m_Implementation))
         {
             sts = m_pSurfaces->SetMfxDevice(m_pDevice);
         }
@@ -221,7 +224,7 @@ OMX_ERRORTYPE MfxOmxVencComponent::Init(void)
         }
         if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
     }
-    if (OMX_ErrorNone == error)
+    if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
     {
         if ((MFX_HW_BXT == m_pDevice->GetPlatformType()) &&
             (MFX_CODEC_AVC == m_MfxVideoParams.mfx.CodecId))
