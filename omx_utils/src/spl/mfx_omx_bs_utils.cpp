@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Intel Corporation
+// Copyright (c) 2013-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "spl/mfx_omx_avc_utils.h"
+#include "spl/mfx_omx_bs_utils.h"
 #include "mfx_omx_utils.h"
 
 OutputBitstream::OutputBitstream(mfxU8 * buf, size_t size, bool emulationControl)
