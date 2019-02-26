@@ -146,3 +146,166 @@ void OutputBitstream::PutFillerBytes(mfxU8 filler, mfxU32 nbytes)
     m_ptr += nbytes;
 }
 
+/* temporal class definition */
+class DwordPointer_
+{
+public:
+    // Default constructor
+    DwordPointer_(void)
+    : m_pDest(NULL)
+    , m_nByteNum(0)
+    , m_iCur(0)
+    {
+    }
+
+    DwordPointer_ operator = (void *pDest)
+    {
+        m_pDest = (mfxU32 *) pDest;
+        m_nByteNum = 0;
+        m_iCur = 0;
+
+        return *this;
+    }
+
+    // Increment operator
+    DwordPointer_ &operator ++ (void)
+    {
+        if (4 == ++m_nByteNum)
+        {
+            *m_pDest = m_iCur;
+            m_pDest += 1;
+            m_nByteNum = 0;
+            m_iCur = 0;
+        }
+        else
+            m_iCur <<= 8;
+
+        return *this;
+    }
+
+    mfxU8 operator = (mfxU8 nByte)
+    {
+        m_iCur = (m_iCur & ~0x0ff) | ((mfxU32) nByte);
+
+        return nByte;
+    }
+
+protected:
+    mfxU32 *m_pDest;                                            // pointer to destination buffer
+    mfxU32 m_nByteNum;                                          // number of current byte in dword
+    mfxU32 m_iCur;                                              // current dword
+};
+
+class SourcePointer_
+{
+public:
+    // Default constructor
+    SourcePointer_(void)
+    : m_pSource(NULL)
+    , m_nZeros(0)
+    , m_nRemovedBytes(0)
+    {
+    }
+
+    SourcePointer_ &operator = (mfxU8 *pSource)
+    {
+        m_pSource = (mfxU8 *) pSource;
+
+        m_nZeros = 0;
+        m_nRemovedBytes = 0;
+
+        return *this;
+    }
+
+    SourcePointer_ &operator ++ (void)
+    {
+        mfxU8 bCurByte = m_pSource[0];
+
+        if (0 == bCurByte)
+            m_nZeros += 1;
+        else
+        {
+            if ((3 == bCurByte) && (2 <= m_nZeros))
+                m_nRemovedBytes += 1;
+            m_nZeros = 0;
+        }
+
+        m_pSource += 1;
+
+        return *this;
+    }
+
+    bool IsPrevent(void)
+    {
+        if ((3 == m_pSource[0]) && (2 <= m_nZeros))
+            return true;
+        else
+            return false;
+    }
+
+    operator mfxU8 (void)
+    {
+        return m_pSource[0];
+    }
+
+    mfxU32 GetRemovedBytes(void)
+    {
+        return m_nRemovedBytes;
+    }
+
+protected:
+    mfxU8 *m_pSource;                                           // pointer to destination buffer
+    mfxU32 m_nZeros;                                            // number of preceding zeros
+    mfxU32 m_nRemovedBytes;                                     // number of removed bytes
+};
+
+void SwapMemoryAndRemovePreventingBytes(mfxU8 *pDestination, mfxU32 &nDstSize, mfxU8 *pSource, mfxU32 nSrcSize)
+{
+    DwordPointer_ pDst;
+    SourcePointer_ pSrc;
+    size_t i;
+
+    // DwordPointer object is swapping written bytes
+    // SourcePointer_ removes preventing start-code bytes
+
+    // reset pointer(s)
+    pSrc = pSource;
+    pDst = pDestination;
+
+    // first two bytes
+    i = 0;
+    while (i < (mfxU32) MSDK_MIN(2, nSrcSize))
+    {
+        pDst = (mfxU8) pSrc;
+        ++pDst;
+        ++pSrc;
+        ++i;
+    }
+
+    // do swapping
+    while (i < (mfxU32) nSrcSize)
+    {
+        if (false == pSrc.IsPrevent())
+        {
+            pDst = (mfxU8) pSrc;
+            ++pDst;
+        }
+        ++pSrc;
+        ++i;
+    }
+
+    // write padding bytes
+    nDstSize = nSrcSize - pSrc.GetRemovedBytes();
+    while (nDstSize & 3)
+    {
+        pDst = (mfxU8) (0);
+        ++nDstSize;
+        ++pDst;
+    }
+}
+
+void BytesSwapper::SwapMemory(mfxU8 *pDestination, mfxU32 &nDstSize, mfxU8 *pSource, mfxU32 nSrcSize)
+{
+    SwapMemoryAndRemovePreventingBytes(pDestination, nDstSize, pSource, nSrcSize);
+}
+

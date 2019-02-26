@@ -24,6 +24,11 @@
 #include <exception>
 #include "mfxstructures.h"
 
+#define MSDK_MAX(A, B)                           (((A) > (B)) ? (A) : (B))
+#define MSDK_MIN(A, B)                           (((A) < (B)) ? (A) : (B))
+
+#define SAMPLE_ASSERT(x)
+
 class EndOfBuffer : public std::exception
 {
 public:
@@ -54,5 +59,10 @@ private:
     bool    m_emulationControl;
 };
 
+class BytesSwapper
+{
+public:
+    static void SwapMemory(mfxU8 *pDestination, mfxU32 &nDstSize, mfxU8 *pSource, mfxU32 nSrcSize);
+};
 
 #endif // __MFX_OMX_BS_UTILS_H__

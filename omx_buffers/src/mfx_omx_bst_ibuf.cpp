@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,6 @@
 
 #include "mfx_omx_bst_ibuf.h"
 #include "mfx_omx_avc_bitstream.h"
-#include "mfx_omx_avc_nal_spl.h"
 
 #ifdef ENABLE_READ_SEI
 #include "mfx_omx_hevc_bitstream.h"
@@ -767,7 +766,7 @@ bool MfxOmxAVCFrameConstructor::IsSetInterlaceFlag(bool * bInterlaced)
     std::vector<mfxU8> swappingMemory;
     mfxU32 swappingMemotySize = m_SPS.DataLength - 5; // size SPS in bytes without start code and marker
     swappingMemory.resize(swappingMemotySize + 8);
-    AVCParser::BytesSwapper::SwapMemory(&(swappingMemory[0]), swappingMemotySize, (m_SPS.Data + 5), swappingMemotySize);
+    BytesSwapper::SwapMemory(&(swappingMemory[0]), swappingMemotySize, (m_SPS.Data + 5), swappingMemotySize);
 
     MFX_OMX_AUTO_TRACE_MSG("Calling AVCHeadersBitstream.Reset()");
     MFX_OMX_AUTO_TRACE_U32(swappingMemotySize);
@@ -898,7 +897,7 @@ mfxStatus MfxOmxHEVCFrameConstructor::SaveSEI(mfxBitstream *pSEI)
 
             MFX_OMX_AUTO_TRACE_MSG("Calling ByteSwapper::SwapMemory()");
 
-            AVCParser::BytesSwapper::SwapMemory(&(swappingMemory[0]), swappingMemorySize, (pSEI->Data + 5), swappingMemorySize);
+            BytesSwapper::SwapMemory(&(swappingMemory[0]), swappingMemorySize, (pSEI->Data + 5), swappingMemorySize);
 
             MFX_OMX_AUTO_TRACE_MSG("Calling HEVCHeadersBitstream.Reset()");
             MFX_OMX_AUTO_TRACE_U32(swappingMemorySize);
