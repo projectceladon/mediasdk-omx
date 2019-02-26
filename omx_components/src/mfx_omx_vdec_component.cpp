@@ -1962,6 +1962,8 @@ void MfxOmxVdecComponent::MainThread(void)
             {
                 mfx_sts = InitCodec();
                 if (MFX_ERR_NONE != mfx_sts) m_Error = mfx_sts;
+
+                m_bEosHandlingStarted = false;
             }
 
             if ((MFX_ERR_NONE == m_Error) && !m_bEosHandlingStarted)
@@ -1970,22 +1972,6 @@ void MfxOmxVdecComponent::MainThread(void)
 
                 while (((MFX_ERR_NONE == mfx_sts) || (MFX_ERR_MORE_DATA == mfx_sts)) && CanDecode())
                 {
-                    if ((MFX_ERR_MORE_DATA == mfx_sts))
-                    {
-                        pBuffer = m_pOmxBitstream->GetBuffer();
-                        if (pBuffer)
-                        {
-                            mfx_sts = loader.LoadBuffer(pBuffer);
-                            if ((MFX_ERR_NONE != mfx_sts) && (MFX_ERR_NULL_PTR != mfx_sts))
-                            {
-                                m_Error = mfx_sts;
-                                break;
-                            }
-                        }
-                        else
-                            break;
-                    }
-
                     m_pBitstream = m_pOmxBitstream->GetFrameConstructor()->GetMfxBitstream();
 
                     if (MFX_INIT_COMPLETED != m_InitState)
@@ -2042,8 +2028,29 @@ void MfxOmxVdecComponent::MainThread(void)
 
                     m_pOmxBitstream->GetFrameConstructor()->Sync();
 
-                    m_bEosHandlingStarted = m_pOmxBitstream->GetFrameConstructor()->WasEosReached() || m_bReinit;
+                    if (!m_bChangeOutputPortSettings && MFX_ERR_MORE_DATA == mfx_sts)
+                    {
+                        pBuffer = m_pOmxBitstream->GetBuffer();
+                        if (pBuffer)
+                        {
+                            mfx_sts = loader.LoadBuffer(pBuffer);
+
+                            // MFX_ERR_NULL_PTR is a valid status, we need to continue Decoding/Initialization,
+                            // Without this we will go outside the "while" loop
+                            if (MFX_ERR_NULL_PTR == mfx_sts) mfx_sts = MFX_ERR_NONE;
+
+                            if (MFX_ERR_NONE != mfx_sts)
+                            {
+                                m_Error = mfx_sts;
+                                break;
+                            }
+                        }
+                        else
+                            break;
+                    }
                 }
+
+                m_bEosHandlingStarted = m_pOmxBitstream->GetFrameConstructor()->WasEosReached() || m_bReinit;
 
                 if (MFX_ERR_NONE != mfx_sts &&
                     MFX_ERR_MORE_DATA != mfx_sts && MFX_ERR_MORE_SURFACE != mfx_sts &&
