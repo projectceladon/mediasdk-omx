@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Intel Corporation
+// Copyright (c) 2013-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,8 @@
 #ifndef __MFX_OMX_AVC_BITSTREAM_H_
 #define __MFX_OMX_AVC_BITSTREAM_H_
 
-#include "mfx_omx_avc_structures.h"
 #include "mfx_omx_avc_headers.h"
+#include "mfx_omx_bs_utils.h"
 
 namespace AVCParser
 {

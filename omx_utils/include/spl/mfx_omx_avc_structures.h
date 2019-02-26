@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2018 Intel Corporation
+// Copyright (c) 2013-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -269,9 +269,6 @@ public:
 
     virtual void Free();
 };
-
-
-typedef mfxU32 IntraType;
 
 // Sequence parameter set structure, corresponding to the H.264 bitstream definition.
 struct AVCSeqParamSetBase
@@ -1090,10 +1087,6 @@ inline mfxU32 CalculateSuggestedSize(const AVCSeqParamSet * sps)
 
     return size;
 }
-
-#define SAMPLE_ASSERT(x)
-#define MSDK_MAX(A, B)                           (((A) > (B)) ? (A) : (B))
-#define MSDK_MIN(A, B)                           (((A) < (B)) ? (A) : (B))
 
 } // namespace AVCParser
 
