@@ -36,10 +36,6 @@
 
 /*------------------------------------------------------------------------------*/
 
-#define COMMAND_WAITING_TIMEOUT 1000 * 60 * 5 // 5 min
-
-/*------------------------------------------------------------------------------*/
-
 MfxOmxComponent* MfxOmxVdecComponent::Create(
     OMX_HANDLETYPE self,
     MfxOmxComponentRegData* reg_data,
@@ -1893,22 +1889,10 @@ void MfxOmxVdecComponent::MainThread(void)
     MfxOmxInputData input;
     MfxOmxCommandData& command = input.command;
     mfxStatus mfx_sts = MFX_ERR_NONE;
-    mfxU32 WaitingTimeout = 0;
 
     while (1)
     {
-        if (ETIMEDOUT == m_pCommandsSemaphore->Wait(WaitingTimeout))
-        {
-            // WA: avoid hang on waiting extra surface in case of adaptive playback
-            // and not enought surfaces for continue / complate decodng
-            // should be removed after enabling support of this case in MSDK
-            MFX_OMX_LOG_ERROR("Sending ErrorEvent to OMAX client because waiting for long time");
-            m_pCallbacks->EventHandler(m_self, m_pAppData, OMX_EventError, OMX_ErrorTimeout, 0 , NULL);
-        }
-        else if (!m_bDestroy && CanDecode())
-        {
-            WaitingTimeout = 0;
-        }
+        m_pCommandsSemaphore->Wait();
 
         if (m_bDestroy) break;
 
@@ -2019,11 +2003,6 @@ void MfxOmxVdecComponent::MainThread(void)
                         }
 
                         mfx_sts = DecodeFrame();
-                        if (MFX_ERR_MORE_SURFACE == mfx_sts && !CanDecode())
-                        {
-                            MFX_OMX_AUTO_TRACE("Set Timeout for waiting next surface");
-                            WaitingTimeout = COMMAND_WAITING_TIMEOUT;
-                        }
                     }
 
                     m_pOmxBitstream->GetFrameConstructor()->Sync();
@@ -2140,11 +2119,6 @@ void MfxOmxVdecComponent::MainThread(void)
                                 m_Error = mfx_sts;
                             }
                         }
-                    }
-                    else if (MFX_ERR_MORE_SURFACE == mfx_sts)
-                    {
-                        MFX_OMX_AUTO_TRACE("Set Timeout for waiting next surface");
-                        WaitingTimeout = COMMAND_WAITING_TIMEOUT;
                     }
                 }
             }
@@ -2920,8 +2894,8 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         if (m_pBitstream) m_pBitstream->DataFlag &= ~MFX_BITSTREAM_COMPLETE_FRAME;
     }
 
-    //VP9 decoder able to flush without work surface
-    bool bIsFlushingWithOutWorkSurf = ((m_MfxVideoParams.mfx.CodecId == MFX_CODEC_VP9) && NULL == m_pBitstream);
+    //VP9 and MPEG2 decoders able to flush without work surface
+    bool bIsFlushingWithoutWorkSurf = ((m_MfxVideoParams.mfx.CodecId == MFX_CODEC_VP9 || m_MfxVideoParams.mfx.CodecId == MFX_CODEC_MPEG2) && NULL == m_pBitstream);
 
     while (((MFX_ERR_NONE == mfx_res) || (MFX_ERR_MORE_SURFACE == mfx_res)) && (m_InitState > MFX_INIT_DECODE_HEADER) && CheckBitstream(m_pBitstream))
     {
@@ -2936,7 +2910,7 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         pOutSurface = NULL;
         pWorkSurface = m_pSurfaces->GetBuffer();
         MFX_OMX_AUTO_TRACE_P(pWorkSurface);
-        if (NULL == pWorkSurface && !bIsFlushingWithOutWorkSurf)
+        if (NULL == pWorkSurface && !bIsFlushingWithoutWorkSurf)
         {
             MFX_OMX_AUTO_TRACE_MSG("Free surface not found");
             mfx_res = MFX_ERR_MORE_SURFACE;
