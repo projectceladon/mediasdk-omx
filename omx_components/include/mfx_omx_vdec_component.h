@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -204,6 +204,7 @@ protected:
     mfxSyncPoint* m_pFreeSyncPoint;
 
     mfxU32 m_nLockedSurfacesNum;
+    mfxU32 m_nCountDecodedFrames;
 
     MfxOmxColorAspectsWrapper m_colorAspects;
 

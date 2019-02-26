@@ -93,6 +93,7 @@ MfxOmxVdecComponent::MfxOmxVdecComponent(OMX_ERRORTYPE &error,
     m_pSurfaces(NULL),
     m_pFreeSyncPoint(NULL),
     m_nLockedSurfacesNum(0),
+    m_nCountDecodedFrames(0),
 #ifdef HEVC10HDR_SUPPORT
     m_bIsSetHDRSEI(false),
 #endif
@@ -132,7 +133,7 @@ MfxOmxVdecComponent::~MfxOmxVdecComponent(void)
     if (m_dbg_decin_fc) fclose(m_dbg_decin_fc);
     if (m_dbg_decout) fclose(m_dbg_decout);
 
-    MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Decoded %d frames", m_nLockedSurfacesNum);
+    MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Decoded %d frames", m_nCountDecodedFrames);
     MFX_OMX_LOG_INFO("Destroyed %s", m_pRegData->m_name);
 }
 
@@ -3021,6 +3022,7 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
                     }
                     else
                     {
+                        m_nCountDecodedFrames++;
                         m_pFreeSyncPoint = NULL;
 
                         if (MFX_ERR_NONE == mfx_res)
