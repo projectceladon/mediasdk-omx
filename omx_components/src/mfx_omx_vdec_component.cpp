@@ -2050,7 +2050,11 @@ void MfxOmxVdecComponent::MainThread(void)
                     }
                 }
 
-                m_bEosHandlingStarted = m_pOmxBitstream->GetFrameConstructor()->WasEosReached() || m_bReinit;
+                if ((m_pOmxBitstream->GetFrameConstructor()->WasEosReached() &&
+                     m_pOmxBitstream->GetFrameConstructor()->GetMfxBitstream()->DataLength == 0) || m_bReinit)
+                {
+                    m_bEosHandlingStarted = true;
+                }
 
                 if (MFX_ERR_NONE != mfx_sts &&
                     MFX_ERR_MORE_DATA != mfx_sts && MFX_ERR_MORE_SURFACE != mfx_sts &&
@@ -2919,6 +2923,13 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
     while (((MFX_ERR_NONE == mfx_res) || (MFX_ERR_MORE_SURFACE == mfx_res)) && (m_InitState > MFX_INIT_DECODE_HEADER) && CheckBitstream(m_pBitstream))
     {
         MFX_OMX_AUTO_TRACE("Decoding loop");
+
+        if (m_pBitstream && m_pBitstream->DataLength == 0)
+        {
+            mfx_res = MFX_ERR_MORE_DATA;
+            break;
+        }
+
         pOutSurface = NULL;
         pWorkSurface = m_pSurfaces->GetBuffer();
         MFX_OMX_AUTO_TRACE_P(pWorkSurface);
@@ -2987,6 +2998,13 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
 
         if ((MFX_ERR_NONE == mfx_res) || (MFX_ERR_MORE_DATA == mfx_res) || (MFX_ERR_MORE_SURFACE == mfx_res))
         {
+            if (MFX_ERR_MORE_DATA == mfx_res && m_pOmxBitstream->GetFrameConstructor()->WasEosReached() &&
+                m_pBitstream && m_pBitstream->DataLength > 0)
+            {
+                // skip useless tail of bitstream which can't be decoded
+                m_pBitstream->DataLength = 0;
+            }
+
             if (pWorkSurface->Data.Locked) ++m_nLockedSurfacesNum;
             if (NULL != pOutSurface)
             {
