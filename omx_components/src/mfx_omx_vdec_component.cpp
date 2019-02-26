@@ -2920,6 +2920,9 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         if (m_pBitstream) m_pBitstream->DataFlag &= ~MFX_BITSTREAM_COMPLETE_FRAME;
     }
 
+    //VP9 decoder able to flush without work surface
+    bool bIsFlushingWithOutWorkSurf = ((m_MfxVideoParams.mfx.CodecId == MFX_CODEC_VP9) && NULL == m_pBitstream);
+
     while (((MFX_ERR_NONE == mfx_res) || (MFX_ERR_MORE_SURFACE == mfx_res)) && (m_InitState > MFX_INIT_DECODE_HEADER) && CheckBitstream(m_pBitstream))
     {
         MFX_OMX_AUTO_TRACE("Decoding loop");
@@ -2933,7 +2936,7 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         pOutSurface = NULL;
         pWorkSurface = m_pSurfaces->GetBuffer();
         MFX_OMX_AUTO_TRACE_P(pWorkSurface);
-        if (!pWorkSurface)
+        if (NULL == pWorkSurface && !bIsFlushingWithOutWorkSurf)
         {
             MFX_OMX_AUTO_TRACE_MSG("Free surface not found");
             mfx_res = MFX_ERR_MORE_SURFACE;
@@ -2947,7 +2950,7 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         }
         else pSyncPoint = m_pFreeSyncPoint;
 
-        pWorkSurface->Data.FrameOrder = m_nLockedSurfacesNum;
+        if (NULL != pWorkSurface) pWorkSurface->Data.FrameOrder = m_nLockedSurfacesNum;
         // Decoding bitstream. If function called on EOS then drainnig begins and we must
         // wait while decoder can accept input data
         do
@@ -3005,7 +3008,8 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
                 m_pBitstream->DataLength = 0;
             }
 
-            if (pWorkSurface->Data.Locked) ++m_nLockedSurfacesNum;
+            if (NULL != pWorkSurface && pWorkSurface->Data.Locked) ++m_nLockedSurfacesNum;
+
             if (NULL != pOutSurface)
             {
                 MFX_OMX_AUTO_TRACE_I32(pOutSurface->Data.Locked);
