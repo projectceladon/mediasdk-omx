@@ -48,7 +48,8 @@ public:
     static MfxOmxComponent* Create(
         OMX_HANDLETYPE self,
         MfxOmxComponentRegData* reg_data,
-        OMX_U32 flags);
+        OMX_U32 flags,
+        OMX_ERRORTYPE &error);
     virtual ~MfxOmxVdecComponent(void);
 
     // MfxOmxComponent methods

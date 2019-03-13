@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -75,8 +75,8 @@ OMX_ERRORTYPE MFX_OMX_ComponentInitFromTable(
     MFX_OMX_AUTO_TRACE_U32(omx_res);
     if (OMX_ErrorNone == omx_res)
     {
-        pComponent = pRegTable[component_index].m_create_func(hComponent, bCreateComponent, &(pRegTable[component_index]), nComponentFlags);
-        if (!pComponent) omx_res = OMX_ErrorInsufficientResources;
+        pComponent = pRegTable[component_index].m_create_func(hComponent, bCreateComponent, &(pRegTable[component_index]), nComponentFlags, omx_res);
+        if (!pComponent && OMX_ErrorNone == omx_res) omx_res = OMX_ErrorInsufficientResources;
     }
     MFX_OMX_AUTO_TRACE_U32(omx_res);
     if (OMX_ErrorNone == omx_res)

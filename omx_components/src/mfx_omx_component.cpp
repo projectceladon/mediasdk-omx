@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,8 @@ MfxOmxComponent* mfx_omx_create_component(
     OMX_HANDLETYPE self,
     OMX_BOOL bCreateComponent,
     MfxOmxComponentRegData* reg_data,
-    OMX_U32 flags)
+    OMX_U32 flags,
+    OMX_ERRORTYPE &error)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     MfxOmxComponent* pComponent = NULL;
@@ -69,18 +70,18 @@ MfxOmxComponent* mfx_omx_create_component(
                 (MfxOmx_vp8vd  == reg_data->m_type) ||
                 (MfxOmx_vp9vd  == reg_data->m_type))
             {
-                pComponent = MfxOmxVdecComponent::Create(self, reg_data, flags);
+                pComponent = MfxOmxVdecComponent::Create(self, reg_data, flags, error);
             }
             else if ((MfxOmx_h264ve == reg_data->m_type)
                   || (MfxOmx_h265ve == reg_data->m_type))
             {
-                pComponent = MfxOmxVencComponent::Create(self, reg_data, flags);
+                pComponent = MfxOmxVencComponent::Create(self, reg_data, flags, error);
             }
         }
     }
     else
     {
-        pComponent = MfxOmxDummyComponent::Create(self, reg_data, flags);
+        pComponent = MfxOmxDummyComponent::Create(self, reg_data, flags, error);
     }
     MFX_OMX_AUTO_TRACE_P(pComponent);
     return pComponent;
@@ -1091,15 +1092,18 @@ OMX_ERRORTYPE MfxOmxComponent::ComponentRoleEnum(
 MfxOmxComponent* MfxOmxDummyComponent::Create(
     OMX_HANDLETYPE self,
     MfxOmxComponentRegData* reg_data,
-    OMX_U32 flags)
+    OMX_U32 flags,
+    OMX_ERRORTYPE &error)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     OMX_ERRORTYPE omx_res = OMX_ErrorNone;
     MfxOmxDummyComponent* pComponent = NULL;
+    error = OMX_ErrorNone;
 
     MFX_OMX_NEW(pComponent, MfxOmxDummyComponent(omx_res, self, reg_data, flags));
     if (OMX_ErrorNone != omx_res)
     {
+        error = omx_res;
         MFX_OMX_DELETE(pComponent);
     }
     MFX_OMX_AUTO_TRACE_P(pComponent);

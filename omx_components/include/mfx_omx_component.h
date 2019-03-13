@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -124,7 +124,8 @@ typedef MfxOmxComponent* MfxOmxComponentCreateFunc(
     OMX_HANDLETYPE self,
     OMX_BOOL bCreateComponent,
     MfxOmxComponentRegData* reg_data,
-    OMX_U32 flags);
+    OMX_U32 flags,
+    OMX_ERRORTYPE &error);
 
 /*------------------------------------------------------------------------------*/
 
@@ -339,7 +340,8 @@ public:
     static MfxOmxComponent* Create(
         OMX_HANDLETYPE self,
         MfxOmxComponentRegData* reg_data,
-        OMX_U32 flags);
+        OMX_U32 flags,
+        OMX_ERRORTYPE &error);
 
     virtual ~MfxOmxDummyComponent(void);
 
@@ -383,7 +385,8 @@ extern MfxOmxComponent* mfx_omx_create_component(
     OMX_HANDLETYPE self,
     OMX_BOOL bCreateComponent,
     MfxOmxComponentRegData* reg_data,
-    OMX_U32 flags);
+    OMX_U32 flags,
+    OMX_ERRORTYPE &error);
 
 // OMX Component functions
 extern OMX_ERRORTYPE MFX_OMX_GetComponentVersion(
