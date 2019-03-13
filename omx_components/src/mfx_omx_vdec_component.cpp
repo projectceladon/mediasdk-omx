@@ -165,7 +165,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::Init(void)
             MFX_OMX_NEW(m_pDEC, MFXVideoDECODE(m_Session));
             if (!m_pDEC) sts = MFX_ERR_MEMORY_ALLOC;
         }
-        if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
+        if (MFX_ERR_NONE != sts) error = ErrorStatusMfxToOmx(sts);
     }
     if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
     {
@@ -184,7 +184,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::Init(void)
     if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
     {
         sts = m_pDevice->InitMfxSession(&m_Session);
-        if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
+        if (MFX_ERR_NONE != sts) error = ErrorStatusMfxToOmx(sts);
     }
     if (OMX_ErrorNone == error)
     {
@@ -234,7 +234,11 @@ OMX_ERRORTYPE MfxOmxVdecComponent::Init(void)
         {
             sts = m_pOmxBitstream->SetBuffersCallback(this);
         }
-        if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
+        if (MFX_ERR_NONE != sts)
+        {
+            if (MFX_ERR_UNSUPPORTED == sts) error = OMX_ErrorComponentNotFound;
+            else error = ErrorStatusMfxToOmx(sts);
+        }
     }
     if (OMX_ErrorNone == error)
     {
@@ -261,7 +265,7 @@ OMX_ERRORTYPE MfxOmxVdecComponent::Init(void)
         {
             m_pSurfaces->SetMfxDevice(m_pDevice);
         }
-        if (MFX_ERR_NONE != sts) error = OMX_ErrorUndefined;
+        if (MFX_ERR_NONE != sts) error = ErrorStatusMfxToOmx(sts);
     }
 
     if (OMX_ErrorNone == error)
