@@ -26,7 +26,7 @@
 namespace HEVCParser
 {
 
-#define MFX_INTERNAL_CPY(dst, src, size) memcpy((uint8_t *)(dst), (const uint8_t *)(src), (int)(size))
+#define MFX_INTERNAL_CPY(dst, src, size) std::copy((const uint8_t *)(src), (const uint8_t *)(src) + (int)(size), (uint8_t *)(dst))
 
 #define H265_FORCEINLINE __attribute__((always_inline))
 #define H265_NONLINE __attribute__((noinline))
