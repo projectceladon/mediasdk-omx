@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,8 @@ public:
     static MfxOmxComponent* Create(
         OMX_HANDLETYPE self,
         MfxOmxComponentRegData* reg_data,
-        OMX_U32 flags);
+        OMX_U32 flags,
+        OMX_ERRORTYPE &error);
     virtual ~MfxOmxVencComponent(void);
 
     // MfxOmxComponent methods

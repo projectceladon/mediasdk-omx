@@ -39,11 +39,13 @@
 MfxOmxComponent* MfxOmxVdecComponent::Create(
     OMX_HANDLETYPE self,
     MfxOmxComponentRegData* reg_data,
-    OMX_U32 flags)
+    OMX_U32 flags,
+    OMX_ERRORTYPE &error)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     OMX_ERRORTYPE omx_res = OMX_ErrorNone;
     MfxOmxVdecComponent* pComponent = NULL;
+    error = OMX_ErrorNone;
 
     MFX_OMX_NEW(pComponent, MfxOmxVdecComponent(omx_res, self, reg_data, flags));
     if (OMX_ErrorNone == omx_res)
@@ -53,6 +55,7 @@ MfxOmxComponent* MfxOmxVdecComponent::Create(
     }
     if (OMX_ErrorNone != omx_res)
     {
+        error = omx_res;
         MFX_OMX_DELETE(pComponent);
     }
     MFX_OMX_AUTO_TRACE_P(pComponent);
