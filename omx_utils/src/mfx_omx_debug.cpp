@@ -61,7 +61,7 @@ static bool is_matched(const char* str)
     if (0 == MFX_OMX_GET_ARRAY_SIZE(g_debug_pattern)) return true; // match all
     if (!str) return false;
 
-    for (int i=0; i < MFX_OMX_GET_ARRAY_SIZE(g_debug_pattern); ++i)
+    for (unsigned int i=0; i < MFX_OMX_GET_ARRAY_SIZE(g_debug_pattern); ++i)
     {
         if (strstr(str, g_debug_pattern[i])) return true;
     }
