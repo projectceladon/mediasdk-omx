@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 #define __MFX_OMX_TYPES_H__
 
 #include "mfx_omx_defs.h"
+#include <array>
 
 /*------------------------------------------------------------------------------*/
 // on Android OMX_VERSION_* are not defined
@@ -349,28 +350,24 @@ protected:
     int getEnabledMapIdx(mfxU32 bufferid) const
     {
         int idx = 0;
-
         if (!N) return -1;
-        switch (bufferid)
-        {
-          case MFX_EXTBUFF_ENCODER_ROI:
-            ++idx;
-          case MFX_EXTBUFF_VIDEO_SIGNAL_INFO:
-            ++idx;
-          case MFX_EXTBUFF_AVC_TEMPORAL_LAYERS:
-            ++idx;
-          case MFX_EXTBUFF_ENCODER_RESET_OPTION:
-            ++idx;
-          case MFX_EXTBUFF_CODING_OPTION3:
-            ++idx;
-          case MFX_EXTBUFF_CODING_OPTION2:
-            ++idx;
-          case MFX_EXTBUFF_CODING_OPTION:
-            if (idx >= MFX_OMX_ENCODE_EXTBUF_MAX_NUM) return -1;
-            return idx;
-          default:
-            return -1;
+
+        std::array<mfxU32, 8> mfxExtbufIds = {
+            MFX_EXTBUFF_CODING_OPTION,
+            MFX_EXTBUFF_CODING_OPTION2,
+            MFX_EXTBUFF_CODING_OPTION3,
+            MFX_EXTBUFF_ENCODER_RESET_OPTION,
+            MFX_EXTBUFF_AVC_TEMPORAL_LAYERS,
+            MFX_EXTBUFF_VP8_CODING_OPTION,
+            MFX_EXTBUFF_VIDEO_SIGNAL_INFO,
+            MFX_EXTBUFF_ENCODER_ROI,
         };
+        auto extBufIdIt = std::find(mfxExtbufIds.begin(), mfxExtbufIds.end(), bufferid);
+        if (extBufIdIt != mfxExtbufIds.end())
+            idx = std::distance(mfxExtbufIds.begin(), extBufIdIt);
+
+        if (idx >= MFX_OMX_ENCODE_EXTBUF_MAX_NUM) return -1;
+        return idx;
     }
 };
 
