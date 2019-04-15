@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -388,7 +388,7 @@ protected: // functions
 
 protected: // variables
     //frameConstructor object
-    std::auto_ptr<IMfxOmxFrameConstructor> m_frameConstructor;
+    std::unique_ptr<IMfxOmxFrameConstructor> m_frameConstructor;
 
     // current buffer (sample)
     OMX_BUFFERHEADERTYPE* m_pBuffer;
