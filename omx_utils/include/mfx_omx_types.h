@@ -352,7 +352,7 @@ protected:
         int idx = 0;
         if (!N) return -1;
 
-        std::array<mfxU32, 8> mfxExtbufIds = {
+        std::array<mfxU32, 8> mfxExtbufIds = {{
             MFX_EXTBUFF_CODING_OPTION,
             MFX_EXTBUFF_CODING_OPTION2,
             MFX_EXTBUFF_CODING_OPTION3,
@@ -361,7 +361,7 @@ protected:
             MFX_EXTBUFF_VP8_CODING_OPTION,
             MFX_EXTBUFF_VIDEO_SIGNAL_INFO,
             MFX_EXTBUFF_ENCODER_ROI,
-        };
+        }};
         auto extBufIdIt = std::find(mfxExtbufIds.begin(), mfxExtbufIds.end(), bufferid);
         if (extBufIdIt != mfxExtbufIds.end())
             idx = std::distance(mfxExtbufIds.begin(), extBufIdIt);
