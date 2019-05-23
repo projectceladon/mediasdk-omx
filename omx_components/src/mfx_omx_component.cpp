@@ -73,7 +73,8 @@ MfxOmxComponent* mfx_omx_create_component(
                 pComponent = MfxOmxVdecComponent::Create(self, reg_data, flags, error);
             }
             else if ((MfxOmx_h264ve == reg_data->m_type)
-                  || (MfxOmx_h265ve == reg_data->m_type))
+                  || (MfxOmx_h265ve == reg_data->m_type)
+                  || (MfxOmx_vp9ve  == reg_data->m_type))
             {
                 pComponent = MfxOmxVencComponent::Create(self, reg_data, flags, error);
             }

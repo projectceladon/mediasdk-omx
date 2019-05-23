@@ -167,6 +167,7 @@ union MfxOmxExtBuffer
     mfxExtCodingOption3 opt3;
     mfxExtEncoderResetOption reset;
     mfxExtAvcTemporalLayers tempLayers;
+    mfxExtVP9Param vp9param;
     mfxExtVideoSignalInfo vsi;
     mfxExtEncoderROI roi;
 };

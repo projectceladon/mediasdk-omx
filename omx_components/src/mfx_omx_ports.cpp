@@ -68,6 +68,9 @@ MfxOmxPortData* mfx_omx_create_port(MfxOmxPortRegData* reg_data)
     case MfxOmxPortVideo_h265ve:
         port_data = (MfxOmxPortData*)calloc(1, sizeof(MfxOmxPortData_h265ve));
         break;
+    case MfxOmxPortVideo_vp9ve:
+        port_data = (MfxOmxPortData*)calloc(1, sizeof(MfxOmxPortData_vp9ve));
+        break;
     default:
         break;
     }
@@ -155,6 +158,8 @@ bool mfx_omx_is_index_valid(OMX_INDEXTYPE index, MfxOmxPortId port_id)
             if (MfxOmx_IndexIntelIdrInterval == index) return true;
             if (MfxOmx_IndexIntelGopRefDist == index) return true;
             if (MfxOmx_IndexIntelDisableDeblockingIdc == index) return true;
+            break;
+        case MfxOmxPortVideo_vp9ve:
             break;
         default:
             MFX_OMX_AUTO_TRACE_MSG("Unhandled port_id");

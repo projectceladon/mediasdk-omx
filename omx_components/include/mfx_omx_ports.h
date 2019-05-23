@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,8 @@ enum MfxOmxPortId
     MfxOmxPortVideo_vc1vd = MfxOmxPortVideo+6,
     MfxOmxPortVideo_vp8vd = MfxOmxPortVideo+9,
     MfxOmxPortVideo_vp9vd = MfxOmxPortVideo+10,
-    MfxOmxPortVideo_h265ve = MfxOmxPortVideo+12
+    MfxOmxPortVideo_h265ve = MfxOmxPortVideo+12,
+    MfxOmxPortVideo_vp9ve = MfxOmxPortVideo+13,
 };
 
 /*------------------------------------------------------------------------------*/
@@ -89,6 +90,7 @@ struct MfxOmxVideoPortData
 #define MfxOmxPortData_vp8vd  MfxOmxVideoPortData
 #define MfxOmxPortData_vp9vd  MfxOmxVideoPortData
 #define MfxOmxPortData_h265ve  MfxOmxVideoPortData
+#define MfxOmxPortData_vp9ve  MfxOmxVideoPortData
 
 /*------------------------------------------------------------------------------*/
 
