@@ -38,6 +38,7 @@ enum MfxOmxComponentType
     MfxOmx_vp8vd,
     MfxOmx_vp9vd,
     MfxOmx_vpp,
+    MfxOmx_vp9ve,
     MfxOmx_h265ve
 };
 

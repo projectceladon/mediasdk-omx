@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 Intel Corporation
+// Copyright (c) 2011-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,6 +47,7 @@ Defined functions:
 #include "components/mfx_omx_vp8vd.h"
 #include "components/mfx_omx_vp9vd.h"
 #include "components/mfx_omx_h265ve.h"
+#include "components/mfx_omx_vp9ve.h"
 
 /*------------------------------------------------------------------------------*/
 
@@ -70,6 +71,7 @@ static MfxOmxComponentRegData g_mfx_omx_components[] =
     ,MFX_OMX_DECLARE_VP8VD
     ,MFX_OMX_DECLARE_VP9VD
     ,MFX_OMX_DECLARE_H265VE
+    ,MFX_OMX_DECLARE_VP9VE
 };
 
 /*------------------------------------------------------------------------------*/

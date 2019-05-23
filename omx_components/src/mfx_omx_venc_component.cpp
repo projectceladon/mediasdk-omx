@@ -259,6 +259,8 @@ void MfxOmxVencComponent::Reset(void)
         break;
     case MfxOmx_h265ve:
         m_MfxVideoParams.mfx.CodecId = MFX_CODEC_HEVC;
+    case MfxOmx_vp9ve:
+        m_MfxVideoParams.mfx.CodecId = MFX_CODEC_VP9;
         break;
     default:
         MFX_OMX_AUTO_TRACE_MSG("unhandled codec type: BUG in plug-ins registration");
@@ -419,6 +421,15 @@ OMX_ERRORTYPE MfxOmxVencComponent::PortsParams_2_MfxVideoParams(void)
             m_OmxMfxVideoParams.ext_buf[idx].opt.PicTimingSEI = MFX_CODINGOPTION_OFF;
         }
     }
+    else if (MFX_CODEC_VP9 == m_MfxVideoParams.mfx.CodecId)
+    {
+        idx = m_OmxMfxVideoParams.enableExtParam(MFX_EXTBUFF_VP9_PARAM);
+        if (idx >= 0 && idx < MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+        {
+            m_OmxMfxVideoParams.ext_buf[idx].vp9param.WriteIVFHeaders = MFX_CODINGOPTION_OFF;
+        }
+    }
+
     MFX_OMX_AT__mfxVideoParam_enc(m_MfxVideoParams);
     MFX_OMX_AUTO_TRACE_U32(omx_res);
     return omx_res;
