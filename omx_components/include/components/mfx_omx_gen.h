@@ -70,7 +70,12 @@ static const MfxOmxProfileLevelTable g_h265_profile_levels[] =
 
 static const MfxOmxProfileLevelTable g_mp2_profile_levels[] =
 {
-    { OMX_VIDEO_MPEG2ProfileSimple, OMX_VIDEO_MPEG2LevelLL }
+    { OMX_VIDEO_MPEG2ProfileSimple, OMX_VIDEO_MPEG2LevelLL },
+    { OMX_VIDEO_MPEG2ProfileSimple, OMX_VIDEO_MPEG2LevelML },
+    { OMX_VIDEO_MPEG2ProfileSimple, OMX_VIDEO_MPEG2LevelH14 },
+    { OMX_VIDEO_MPEG2ProfileMain, OMX_VIDEO_MPEG2LevelLL },
+    { OMX_VIDEO_MPEG2ProfileMain, OMX_VIDEO_MPEG2LevelML },
+    { OMX_VIDEO_MPEG2ProfileMain, OMX_VIDEO_MPEG2LevelH14 }
 };
 
 /*------------------------------------------------------------------------------*/

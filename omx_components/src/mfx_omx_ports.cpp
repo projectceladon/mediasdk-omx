@@ -139,6 +139,9 @@ bool mfx_omx_is_index_valid(OMX_INDEXTYPE index, MfxOmxPortId port_id)
             if (OMX_IndexExtDecoderBufferHandle == index) return true;
             if (MfxOmx_IndexIntelEnableSFC == index) return true;
             break;
+        case MfxOmxPortVideo_mp2vd:
+            if (OMX_IndexParamVideoProfileLevelQuerySupported == index) return true;
+            break;
         case MfxOmxPortVideo_h265vd:
             if (OMX_IndexParamVideoProfileLevelQuerySupported == index) return true;
             break;
