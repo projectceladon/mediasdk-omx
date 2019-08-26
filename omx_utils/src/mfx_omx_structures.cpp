@@ -73,7 +73,6 @@ const MfxOmxCodingMimeTable g_CodingMimeTable[] =
     { OMX_VIDEO_CodingWMV, (OMX_STRING)"video/vc1" },
     { OMX_VIDEO_CodingVP8, (OMX_STRING)"video/x-vnd.on2.vp8" },
     { OMX_VIDEO_CodingVP9, (OMX_STRING)"video/x-vnd.on2.vp9" },
-    { OMX_VIDEO_CodingVP9, (OMX_STRING)"video/x-vnd.on2.vp9" },
     { static_cast<OMX_VIDEO_CODINGTYPE>(MFX_OMX_VIDEO_CodingHEVC), (OMX_STRING)"video/h265" }
 };
 
@@ -156,6 +155,16 @@ const MfxOmxIntTable g_h265_levels[] =
     { OMX_VIDEO_HEVCHighTierLevel61, MFX_TIER_HEVC_HIGH + MFX_LEVEL_HEVC_61 },
     { OMX_VIDEO_HEVCMainTierLevel62, MFX_TIER_HEVC_MAIN + MFX_LEVEL_HEVC_62 },
     { OMX_VIDEO_HEVCHighTierLevel62, MFX_TIER_HEVC_HIGH + MFX_LEVEL_HEVC_62 },
+};
+
+/*------------------------------------------------------------------------------*/
+
+const MfxOmxIntTable g_vp9_profiles[] =
+{
+    { OMX_VIDEO_VP9Profile0, MFX_PROFILE_VP9_0 },
+    { OMX_VIDEO_VP9Profile1, MFX_PROFILE_VP9_1 },
+    { OMX_VIDEO_VP9Profile2, MFX_PROFILE_VP9_2 },
+    { OMX_VIDEO_VP9Profile3, MFX_PROFILE_VP9_3 }
 };
 
 /*------------------------------------------------------------------------------*/
@@ -300,6 +309,24 @@ mfxU16 omx2mfx_hevc_level(OMX_U32 omx_level)
                                    MFX_OMX_GET_ARRAY_SIZE(g_h265_levels),
                                    omx_level);
 }
+/*------------------------------------------------------------------------------*/
+
+mfxU16 omx2mfx_vp9_profile(OMX_U32 omx_profile)
+{
+    return omx2mfx_int_table_value(g_vp9_profiles,
+                                   MFX_OMX_GET_ARRAY_SIZE(g_vp9_profiles),
+                                   omx_profile);
+}
+
+/*------------------------------------------------------------------------------*/
+
+OMX_VIDEO_VP9PROFILETYPE mfx2omx_vp9_profile(mfxU16 mfx_profile)
+{
+    return (OMX_VIDEO_VP9PROFILETYPE)mfx2omx_int_table_value(g_vp9_profiles,
+                                                             MFX_OMX_GET_ARRAY_SIZE(g_vp9_profiles),
+                                                             mfx_profile);
+}
+
 /*------------------------------------------------------------------------------*/
 
 OMX_VIDEO_CONTROLRATETYPE mfx2omx_brc(mfxU16 mfx_brc)
@@ -987,6 +1014,73 @@ OMX_ERRORTYPE mfx2omx_config(
     return OMX_ErrorNone;
 }
 
+
+/*------------------------------------------------------------------------------*/
+
+template<>
+OMX_ERRORTYPE omx2mfx_config(
+    MfxOmxInputConfig& config,
+    const OMX_VIDEO_PARAM_VP9TYPE& omxparams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    MFX_OMX_AT__OMX_VIDEO_PARAM_VP9TYPE(omxparams);
+
+    MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "SetParam(VP9TYPE): eProfile %X, eLevel %X, bErrorResilientMode %d, nTileRows %d, nTileColumns %d, bEnableFrameParallelDecoding = %d", omxparams.eProfile, omxparams.eLevel, omxparams.bErrorResilientMode, omxparams.nTileRows, omxparams.nTileColumns, omxparams.bEnableFrameParallelDecoding);
+    config.mfxparams->mfx.CodecProfile = omx2mfx_vp9_profile(omxparams.eProfile);
+    //TODO
+
+    return OMX_ErrorNone;
+}
+
+/*------------------------------------------------------------------------------*/
+
+template<>
+OMX_ERRORTYPE mfx2omx_config(
+    OMX_VIDEO_PARAM_VP9TYPE& omxparams,
+    const MfxOmxVideoParamsWrapper& mfxparams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    mfx_omx_reset_omx_structure(omxparams);
+
+    //TODO
+    omxparams.eProfile = mfx2omx_vp9_profile(mfxparams.mfx.CodecProfile);
+
+    MFX_OMX_AT__OMX_VIDEO_PARAM_VP9TYPE(omxparams);
+    return OMX_ErrorNone;
+}
+
+/*------------------------------------------------------------------------------*/
+
+template<>
+OMX_ERRORTYPE omx2mfx_config(
+    MfxOmxInputConfig& config,
+    const OMX_VIDEO_PARAM_ANDROID_VP8ENCODERTYPE& omxparams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    //TODO
+    config.mfxparams->mfx.IdrInterval = omxparams.nKeyFrameInterval;
+
+    return OMX_ErrorNone;
+}
+
+/*--------------------------------------------------------------------------------*/
+
+template<>
+OMX_ERRORTYPE mfx2omx_config(
+    OMX_VIDEO_PARAM_ANDROID_VP8ENCODERTYPE& omxparams,
+    const MfxOmxVideoParamsWrapper& mfxparams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    mfx_omx_reset_omx_structure(omxparams);
+
+    //TODO
+    omxparams.nKeyFrameInterval = mfxparams.mfx.IdrInterval;
+
+    return OMX_ErrorNone;
+}
 
 /*------------------------------------------------------------------------------*/
 
@@ -1730,6 +1824,8 @@ DEFINE_TEMPLATE(OMX_VIDEO_CONFIG_INTEL_BITRATETYPE)
 DEFINE_TEMPLATE(OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_AVCTYPE)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_HEVCTYPE)
+DEFINE_TEMPLATE(OMX_VIDEO_PARAM_VP9TYPE)
+DEFINE_TEMPLATE(OMX_VIDEO_PARAM_ANDROID_VP8ENCODERTYPE)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_HRD_PARAM)
 DEFINE_TEMPLATE(OMX_VIDEO_CONFIG_USERDATA)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_MAX_PICTURE_SIZE)
@@ -1839,6 +1935,8 @@ INSTANTIATE(OMX_VIDEO_CONFIG_INTEL_BITRATETYPE);
 INSTANTIATE(OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS);
 INSTANTIATE(OMX_VIDEO_PARAM_AVCTYPE);
 INSTANTIATE(OMX_VIDEO_PARAM_HEVCTYPE);
+INSTANTIATE(OMX_VIDEO_PARAM_VP9TYPE);
+INSTANTIATE(OMX_VIDEO_PARAM_ANDROID_VP8ENCODERTYPE);
 INSTANTIATE(OMX_VIDEO_PARAM_HRD_PARAM);
 INSTANTIATE(OMX_VIDEO_PARAM_MAX_PICTURE_SIZE);
 INSTANTIATE(OMX_VIDEO_PARAM_TARGET_USAGE);

@@ -653,6 +653,19 @@ const char* mfx_omx_code_to_string(mfxStatus sts);
 
 /*------------------------------------------------------------------------------*/
 
+#define MFX_OMX_AT__OMX_VIDEO_PARAM_VP9TYPE(_params) \
+    MFX_OMX_AT__OMX_STRUCT(_params); \
+    MFX_OMX_AUTO_TRACE_I32(_params.nPortIndex); \
+    MFX_OMX_AUTO_TRACE_I32(_params.eProfile); \
+    MFX_OMX_AUTO_TRACE_U32(_params.eLevel);\
+    MFX_OMX_AUTO_TRACE_I32(_params.bErrorResilientMode);\
+    MFX_OMX_AUTO_TRACE_U32(_params.nTileRows);\
+    MFX_OMX_AUTO_TRACE_U32(_params.nTileColumns);\
+    MFX_OMX_AUTO_TRACE_I32(_params.bEnableFrameParallelDecoding);
+
+/*------------------------------------------------------------------------------*/
+
+
 #define MFX_OMX_AT__OMX_VIDEO_PARAM_PORTFORMATTYPE(_port) \
     MFX_OMX_AT__OMX_STRUCT(_port); \
     MFX_OMX_AUTO_TRACE_I32(_port.nPortIndex); \
