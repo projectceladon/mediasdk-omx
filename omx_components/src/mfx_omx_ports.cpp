@@ -163,6 +163,10 @@ bool mfx_omx_is_index_valid(OMX_INDEXTYPE index, MfxOmxPortId port_id)
             if (MfxOmx_IndexIntelDisableDeblockingIdc == index) return true;
             break;
         case MfxOmxPortVideo_vp9ve:
+            if (OMX_IndexParamVideoVp9 == index) return true;
+            if (OMX_IndexParamVideoBitrate == index) return true;
+            if (OMX_IndexParamVideoAndroidVp8Encoder == index) return true;
+            if (OMX_IndexParamVideoProfileLevelQuerySupported == index) return true;
             break;
         default:
             MFX_OMX_AUTO_TRACE_MSG("Unhandled port_id");
