@@ -688,6 +688,22 @@ OMX_ERRORTYPE MfxOmxVencComponent::ValidateConfig(
             nIndex,
             static_cast<OMX_VIDEO_PARAM_HEVCTYPE*>(pConfig));
         break;
+    case OMX_IndexParamVideoVp9:
+        MFX_OMX_AUTO_TRACE_MSG("OMX_IndexParamVideoVp9");
+        if (kind != eSetParameter) break;
+        omx_res = ValidateAndConvert(
+            config,
+            nIndex,
+            static_cast<OMX_VIDEO_PARAM_VP9TYPE*>(pConfig));
+        break;
+	case OMX_IndexParamVideoAndroidVp8Encoder:
+        MFX_OMX_AUTO_TRACE_MSG("OMX_IndexParamVideoAndroidVp8Encoder");
+        if (kind != eSetParameter) break;
+        omx_res = ValidateAndConvert(
+            config,
+            nIndex,
+            static_cast<OMX_VIDEO_PARAM_ANDROID_VP8ENCODERTYPE*>(pConfig));
+        break;
     case OMX_IndexParamVideoProfileLevelCurrent:
         MFX_OMX_AUTO_TRACE_MSG("OMX_IndexParamVideoProfileLevelCurrent");
         if (kind != eSetParameter) break;
@@ -1473,6 +1489,20 @@ OMX_ERRORTYPE MfxOmxVencComponent::GetParameter(
                 static_cast<OMX_VIDEO_PARAM_HEVCTYPE*>(pComponentParameterStructure),
                 m_OmxMfxVideoParams);
             break;
+        case OMX_IndexParamVideoVp9:
+            MFX_OMX_AUTO_TRACE_MSG("OMX_IndexParamVideoVp9");
+            omx_res = mfx2omx(
+                nParamIndex,
+                static_cast<OMX_VIDEO_PARAM_VP9TYPE*>(pComponentParameterStructure),
+                m_OmxMfxVideoParams);
+            break;
+        case OMX_IndexParamVideoAndroidVp8Encoder:
+            MFX_OMX_AUTO_TRACE_MSG("OMX_IndexParamVideoAndroidVp8Encoder");
+            omx_res = mfx2omx(
+                nParamIndex,
+                static_cast<OMX_VIDEO_PARAM_ANDROID_VP8ENCODERTYPE*>(pComponentParameterStructure),
+                m_OmxMfxVideoParams);
+            break;
         case OMX_IndexParamVideoProfileLevelCurrent:
             MFX_OMX_AUTO_TRACE_MSG("OMX_IndexParamVideoProfileLevelCurrent");
             omx_res = mfx2omx(
@@ -1575,7 +1605,6 @@ OMX_ERRORTYPE MfxOmxVencComponent::GetParameter(
             break;
         }
     }
-
     return omx_res;
 }
 
