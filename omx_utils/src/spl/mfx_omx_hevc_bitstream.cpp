@@ -1161,8 +1161,11 @@ void HEVCHeadersBitstream::ParseSEI(mfxPayload *spl)
         payloadSize += last_payload_size_byte;
     }
 
-    spl->NumBit = payloadSize * 8;
-    spl->Type = payloadType;
+    if (spl)
+    {
+        spl->NumBit = payloadSize * 8;
+        spl->Type = payloadType;
+    }
 }
 
 // Parse RPS part in SPS or slice header
