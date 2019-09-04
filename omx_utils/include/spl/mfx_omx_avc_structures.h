@@ -909,6 +909,7 @@ struct AVCSEIPayLoad : public HeapObject, public AVCSEIPayLoadBase
 
     AVCSEIPayLoad()
         : AVCSEIPayLoadBase()
+	, user_data{}
     {
     }
 

@@ -253,8 +253,13 @@ inline void FillScalingList8x8(AVCScalingList8x8 *scl_dst,mfxU8 *coefs_src)
 }
 
 AVCBaseBitstream::AVCBaseBitstream()
+	: m_pbs(0)
+	, m_bitOffset(31)
+	, m_pbsBase(0)
+	, m_maxBsSize(0)
 {
-    Reset(0, 0);
+    //Reset(0, 0); 
+    //Remove duplicated init task.
 }
 
 AVCBaseBitstream::AVCBaseBitstream(mfxU8 * const pb, const mfxU32 maxsize)
