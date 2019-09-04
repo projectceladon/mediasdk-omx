@@ -520,6 +520,7 @@ struct ReferencePictureSetList
 
     ReferencePictureSetList()
     : m_NumberOfReferencePictureSets(0)
+    , referencePictureSet{}
     {
     }
 

@@ -35,6 +35,7 @@ MfxOmxVppWrapp::MfxOmxVppWrapp(void):
     m_pVPP(NULL),
     m_session(NULL),
     m_numVppSurfaces(0),
+    m_EncodeCtrls{},
     m_dbg_vppout(NULL)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
