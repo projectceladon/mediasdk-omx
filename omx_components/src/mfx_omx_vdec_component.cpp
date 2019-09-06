@@ -1973,7 +1973,7 @@ void MfxOmxVdecComponent::MainThread(void)
                         // When we receive the bitstream with incorrect sps/pps, the msdk try to find the other correct sps/pps.
                         // In case, if the sps/pps has not found yet, but EOS has been reached then we need to return the eos output buffer
                         // There is CTS test to check this behavior
-                        if(MFX_ERR_MORE_DATA == mfx_sts && m_pOmxBitstream && m_pOmxBitstream->GetFrameConstructor() && m_pOmxBitstream->GetFrameConstructor()->WasEosReached())
+                        if(MFX_ERR_MORE_DATA == mfx_sts && m_pOmxBitstream->GetFrameConstructor()->WasEosReached())
                         {
                             mfxFrameSurface1 *pWorkSurface = m_pSurfaces->GetBuffer();
                             if (pWorkSurface)
