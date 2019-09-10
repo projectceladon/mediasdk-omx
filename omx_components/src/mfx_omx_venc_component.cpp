@@ -259,6 +259,7 @@ void MfxOmxVencComponent::Reset(void)
         break;
     case MfxOmx_h265ve:
         m_MfxVideoParams.mfx.CodecId = MFX_CODEC_HEVC;
+        break;
     case MfxOmx_vp9ve:
         m_MfxVideoParams.mfx.CodecId = MFX_CODEC_VP9;
         break;
