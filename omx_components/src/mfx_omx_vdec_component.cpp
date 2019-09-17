@@ -618,10 +618,10 @@ OMX_ERRORTYPE MfxOmxVdecComponent::DealWithBuffer(
             }
         }
         else 
-	{
-	    MFX_OMX_LOG_ERROR("Failed to allocate buffers, pBufferHeader=(%p), pBuffer=(%p)", pBufferHeader, pBuffer);
-	    mfx_sts = MFX_ERR_MEMORY_ALLOC;
-	}
+        {
+            MFX_OMX_LOG_ERROR("Failed to allocate buffers for decode output, pBufferHeader=(%p), pBuffer=(%p), nTimeStamp %lld", pBufferHeader, pBuffer, (*ppBufferHdr)->nTimeStamp);
+            mfx_sts = MFX_ERR_MEMORY_ALLOC;
+        }
 
         if (MFX_ERR_NONE == mfx_sts)
         {
