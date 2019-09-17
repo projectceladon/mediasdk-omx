@@ -341,6 +341,10 @@ struct MfxOmxParamsWrapper: public T
             ext_buf[idx].roi.Header.BufferId = MFX_EXTBUFF_ENCODER_ROI;
             ext_buf[idx].roi.Header.BufferSz = sizeof(mfxExtEncoderROI);
             return idx;
+          case MFX_EXTBUFF_VP9_PARAM:
+            ext_buf[idx].vp9param.Header.BufferId = MFX_EXTBUFF_VP9_PARAM;
+            ext_buf[idx].vp9param.Header.BufferSz = sizeof(mfxExtVP9Param);
+            return idx;
           default:
             // if we are here - that's a bug: add index to getEnabledMapIdx()
             return -1;
