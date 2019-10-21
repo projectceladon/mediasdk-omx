@@ -22,7 +22,7 @@
 #include "mfx_omx_defaults.h"
 #include "mfx_omx_vdec_component.h"
 #include "mfx_omx_vaapi_allocator.h"
-
+#include <chrono>
 /*------------------------------------------------------------------------------*/
 
 #undef MFX_OMX_MODULE_NAME
@@ -2947,6 +2947,17 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         // wait while decoder can accept input data
         do
         {
+            //this actions is required to prevent decoder overflow
+            //in case of overflow and NULL work surface decoder returns unexpected not NULL surface which leads to incorrect results
+            //m_nSurfaceNum - 1 because decoder have 1 more surface than we can submit to it without freeing buffers
+            //TODO: remove when this decoder behavior stop to occur
+            if (bIsFlushingWithoutWorkSurf && (pWorkSurface == NULL) && 
+                (m_pSurfaces->GetNumSubmittedSurfaces() >= m_nSurfacesNum - 1 )) {
+                using namespace std::chrono_literals;
+                //using pause equal to 1ms which equal to theoretical minimum of frame decoding
+                std::this_thread::sleep_for(1ms);
+                continue;
+            }
             if (m_pBitstream) MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "DecodeFrameAsync+ DataLength %d, DataOffset %d", m_pBitstream->DataLength, m_pBitstream->DataOffset);
             else MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "DecodeFrameAsync(NULL)+");
 
