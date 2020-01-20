@@ -84,6 +84,12 @@ ifneq ($(filter $(MFX_ANDROID_VERSION), MFX_O),)
   MFX_OMX_CFLAGS_LIBVA += -DANDROID_O
 endif
 
+ifneq ($(filter $(MFX_ANDROID_VERSION), MFX_Q),)
+  # HDR10 support on Android Q
+  MFX_OMX_CFLAGS += -DHEVC10HDR_SUPPORT
+  MFX_OMX_CFLAGS += -DENABLE_READ_SEI
+endif
+
 # Setting usual paths to include files
 MFX_OMX_INCLUDES := $(LOCAL_PATH)/include
 
