@@ -15,6 +15,9 @@
 MFX_OMX_CFLAGS := -DANDROID
 
 # Android version preference:
+ifneq ($(filter 11 11.% R ,$(PLATFORM_VERSION)),)
+  MFX_ANDROID_VERSION:= MFX_R
+endif
 ifneq ($(filter 10 10.% Q ,$(PLATFORM_VERSION)),)
   MFX_ANDROID_VERSION:= MFX_Q
 endif
@@ -27,6 +30,10 @@ ifneq ($(filter 8.% O ,$(PLATFORM_VERSION)),)
   else
     MFX_ANDROID_VERSION:= MFX_O_MR1
   endif
+endif
+
+ifeq ($(filter MFX,$(MFX_ANDROID_VERSION)),)
+  $(error, Invalid MFX_ANDROID_VERSION '$(MFX_ANDROID_VERSION)')
 endif
 
 ifdef RESOURCES_LIMIT
@@ -51,7 +58,7 @@ MFX_OMX_CFLAGS += \
 
 ifeq ($(BOARD_USES_GRALLOC1),true)
   MFX_OMX_CFLAGS += -DMFX_OMX_USE_GRALLOC_1
-  ifneq ($(filter MFX_P MFX_Q,$(MFX_ANDROID_VERSION)),)
+  ifneq ($(filter MFX_P MFX_Q MFX_R,$(MFX_ANDROID_VERSION)),)
     # plugins should use PRIME buffer descriptor since Android P
     MFX_OMX_CFLAGS += -DMFX_OMX_USE_PRIME
   endif
@@ -84,7 +91,7 @@ ifneq ($(filter $(MFX_ANDROID_VERSION), MFX_O),)
   MFX_OMX_CFLAGS_LIBVA += -DANDROID_O
 endif
 
-ifneq ($(filter $(MFX_ANDROID_VERSION), MFX_Q),)
+ifneq ($(filter $(MFX_ANDROID_VERSION), MFX_Q MFX_R),)
   # HDR10 support on Android Q
   MFX_OMX_CFLAGS += -DHEVC10HDR_SUPPORT
   MFX_OMX_CFLAGS += -DENABLE_READ_SEI
@@ -103,7 +110,7 @@ MFX_OMX_INCLUDES_LIBVA := $(TARGET_OUT_HEADERS)/libva
 MFX_OMX_HEADER_LIBRARIES := libmfx_headers
 
 # Setting usual imported headers
-ifneq ($(filter MFX_O_MR1 MFX_P MFX_Q,$(MFX_ANDROID_VERSION)),)
+ifneq ($(filter MFX_O_MR1 MFX_P MFX_Q MFX_R,$(MFX_ANDROID_VERSION)),)
   MFX_OMX_HEADER_LIBRARIES += \
     media_plugin_headers \
     libnativebase_headers \
@@ -111,7 +118,7 @@ ifneq ($(filter MFX_O_MR1 MFX_P MFX_Q,$(MFX_ANDROID_VERSION)),)
     libhardware_headers
 endif
 
-ifneq ($(filter MFX_P MFX_Q,$(MFX_ANDROID_VERSION)),)
+ifneq ($(filter MFX_P MFX_Q MFX_R,$(MFX_ANDROID_VERSION)),)
   MFX_OMX_HEADER_LIBRARIES += \
     libbase_headers
 endif

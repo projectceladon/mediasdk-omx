@@ -26,7 +26,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva libva-android \
     libhardware \
     libcutils \
-    libui
+    libui \
+    libutils
 
 LOCAL_SHARED_LIBRARIES_32 := libmfxhw32
 LOCAL_SHARED_LIBRARIES_64 := libmfxhw64
