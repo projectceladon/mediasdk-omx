@@ -229,8 +229,9 @@ OMX_ERRORTYPE MfxOmxVencComponent::Init(void)
     }
     if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
     {
-        if ((MFX_HW_BXT == m_pDevice->GetPlatformType()) &&
-            (MFX_CODEC_AVC == m_MfxVideoParams.mfx.CodecId))
+        if (((MFX_HW_BXT == m_pDevice->GetPlatformType()) &&
+             (MFX_CODEC_AVC == m_MfxVideoParams.mfx.CodecId)) ||
+            (MFX_HW_EHL == m_pDevice->GetPlatformType()))
             m_MfxVideoParams.mfx.LowPower = MFX_CODINGOPTION_ON;
     }
     if (OMX_ErrorNone == error)
