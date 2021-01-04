@@ -1169,6 +1169,16 @@ OMX_ERRORTYPE omx2mfx_config(
     config.mfxparams->mfx.TargetKbps = (mfxU16)(omxparams.nEncodeBitrate * 0.001);
     config.mfxparams->mfx.MaxKbps = 0;
 
+    if (config.bCodecInitialized && (MFX_CODEC_HEVC == config.mfxparams->mfx.CodecId))
+    {
+        int idx;
+        idx = config.mfxparams->enableExtParam(MFX_EXTBUFF_ENCODER_RESET_OPTION);
+        if (idx < 0 || idx >= MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+            return OMX_ErrorInsufficientResources;
+        else
+            config.mfxparams->ext_buf[idx].reset.StartNewSequence = MFX_CODINGOPTION_ON;
+    }
+
     return OMX_ErrorNone;
 }
 
