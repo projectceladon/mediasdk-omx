@@ -105,7 +105,7 @@ void mfx_omx_set_defaults_mfxVideoParam_enc(mfxVideoParam* params)
         break;
     case MFX_CODEC_HEVC:
         params->mfx.CodecProfile = MFX_PROFILE_HEVC_MAIN;
-        params->mfx.CodecLevel = MFX_LEVEL_HEVC_6;
+        params->mfx.CodecLevel = MFX_LEVEL_HEVC_51;
         params->mfx.TargetUsage = MFX_TARGETUSAGE_BEST_SPEED;
         params->mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
         params->mfx.TargetKbps = 3000;

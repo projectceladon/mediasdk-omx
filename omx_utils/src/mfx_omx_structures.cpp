@@ -822,6 +822,71 @@ OMX_ERRORTYPE mfx2omx_config(
 template<>
 OMX_ERRORTYPE omx2mfx_config(
     MfxOmxInputConfig& config,
+    const OMX_VIDEO_PARAM_COLOR_ASPECT& omxparams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "SetConfig(ColorAspect): ColourPrimaries %d, MatrixCoefficients %d, Transfer %d, VideoFullRange %d", 
+              omxparams.nColourPrimaries, omxparams.nMatrixCoefficients, omxparams.nTransferCharacteristics, omxparams.nVideoFullRange);
+    MFX_OMX_AT__OMX_VIDEO_CONFIG_COLORASPECT(omxparams);
+
+    int idx = config.mfxparams->enableExtParam(MFX_EXTBUFF_VIDEO_SIGNAL_INFO);
+    if (idx < 0)
+	{
+	    return OMX_ErrorInsufficientResources;
+	}
+	else if (idx >= MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+	{
+	    return OMX_ErrorNoMore;
+	}
+
+	config.mfxparams->ext_buf[idx].vsi.ColourPrimaries = omxparams.nColourPrimaries;
+	config.mfxparams->ext_buf[idx].vsi.TransferCharacteristics = omxparams.nTransferCharacteristics;
+	config.mfxparams->ext_buf[idx].vsi.VideoFullRange = omxparams.nVideoFullRange;
+	config.mfxparams->ext_buf[idx].vsi.MatrixCoefficients = omxparams.nMatrixCoefficients;
+	config.mfxparams->ext_buf[idx].vsi.ColourDescriptionPresent = omxparams.nColourPrimaries != 0 ||
+                                                                  omxparams.nTransferCharacteristics != 0 ||
+                                                                  omxparams.nMatrixCoefficients != 0;
+    return OMX_ErrorNone;
+}
+
+/*------------------------------------------------------------------------------*/
+
+template<>
+OMX_ERRORTYPE mfx2omx_config(
+    OMX_VIDEO_PARAM_COLOR_ASPECT& omxparams,
+    const MfxOmxVideoParamsWrapper& mfxparams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    mfx_omx_reset_omx_structure(omxparams);
+
+	int idx = mfxparams.getExtParamIdx(MFX_EXTBUFF_VIDEO_SIGNAL_INFO);
+    if (idx < 0)
+	{
+	    return OMX_ErrorInsufficientResources;
+	}
+	else if (idx >= MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+	{
+	    return OMX_ErrorNoMore;
+	}
+
+	omxparams.nVideoFullRange = mfxparams.ext_buf[idx].vsi.VideoFullRange;
+	if (mfxparams.ext_buf[idx].vsi.ColourDescriptionPresent)
+	{
+	   omxparams.nMatrixCoefficients = mfxparams.ext_buf[idx].vsi.MatrixCoefficients;
+	   omxparams.nColourPrimaries = mfxparams.ext_buf[idx].vsi.ColourPrimaries;
+	   omxparams.nTransferCharacteristics = mfxparams.ext_buf[idx].vsi.TransferCharacteristics;
+	}
+
+    MFX_OMX_AT__OMX_VIDEO_CONFIG_COLORASPECT(omxparams);
+    return OMX_ErrorNone;
+}
+
+/*------------------------------------------------------------------------------*/
+
+template<>
+OMX_ERRORTYPE omx2mfx_config(
+    MfxOmxInputConfig& config,
     const OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS& omxparams)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
@@ -1832,6 +1897,7 @@ DEFINE_TEMPLATE(OMX_CONFIG_DISABLEDEBLOCKINGIDC);
 DEFINE_TEMPLATE(OMX_VIDEO_CONFIG_AVCINTRAPERIOD)
 DEFINE_TEMPLATE(OMX_VIDEO_CONFIG_INTEL_BITRATETYPE)
 DEFINE_TEMPLATE(OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS)
+DEFINE_TEMPLATE(OMX_VIDEO_PARAM_COLOR_ASPECT)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_AVCTYPE)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_HEVCTYPE)
 DEFINE_TEMPLATE(OMX_VIDEO_PARAM_VP9TYPE)
@@ -1942,6 +2008,7 @@ INSTANTIATE(OMX_VIDEO_CONFIG_USERDATA);
 INSTANTIATE(OMX_VIDEO_CONFIG_DIRTY_RECT);
 INSTANTIATE(OMX_VIDEO_CONFIG_AVCINTRAPERIOD);
 INSTANTIATE(OMX_VIDEO_CONFIG_INTEL_BITRATETYPE);
+INSTANTIATE(OMX_VIDEO_PARAM_COLOR_ASPECT);
 INSTANTIATE(OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS);
 INSTANTIATE(OMX_VIDEO_PARAM_AVCTYPE);
 INSTANTIATE(OMX_VIDEO_PARAM_HEVCTYPE);

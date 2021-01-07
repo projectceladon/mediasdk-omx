@@ -130,6 +130,7 @@ bool mfx_omx_is_index_valid(OMX_INDEXTYPE index, MfxOmxPortId port_id)
             if (MfxOmx_IndexIntelIdrInterval == index) return true;
             if (MfxOmx_IndexIntelGopRefDist == index) return true;
             if (MfxOmx_IndexIntelLowPower == index) return true;
+            if (MfxOmx_IndexGoogleDescribeColorAspects == index) return true;
             break;
         case MfxOmxPortVideo_h264vd:
             if (OMX_IndexParamVideoProfileLevelQuerySupported == index) return true;
@@ -161,6 +162,7 @@ bool mfx_omx_is_index_valid(OMX_INDEXTYPE index, MfxOmxPortId port_id)
             if (MfxOmx_IndexIntelIdrInterval == index) return true;
             if (MfxOmx_IndexIntelGopRefDist == index) return true;
             if (MfxOmx_IndexIntelDisableDeblockingIdc == index) return true;
+            if (MfxOmx_IndexGoogleDescribeColorAspects == index) return true;
             break;
         case MfxOmxPortVideo_vp9ve:
             if (OMX_IndexParamVideoVp9 == index) return true;

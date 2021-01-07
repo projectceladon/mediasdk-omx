@@ -26,6 +26,7 @@
 #include "mfx_omx_srf_ibuf.h"
 #include "mfx_omx_bst_pool.h"
 #include "mfx_omx_dev.h"
+#include "mfx_omx_color_aspects_wrapper.h"
 
 /*------------------------------------------------------------------------------*/
 
@@ -201,6 +202,8 @@ protected:
 
     mfxU32 m_nEncoderInputSurfacesCount;
     mfxU32 m_nEncoderOutputBitstreamsCount;
+
+    MfxOmxColorAspectsWrapper m_colorAspects;
 
     buffer_handle_t m_blackFrame;
 

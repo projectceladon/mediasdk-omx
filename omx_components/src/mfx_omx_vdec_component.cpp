@@ -330,6 +330,9 @@ void MfxOmxVdecComponent::Reset(void)
         MFX_OMX_AUTO_TRACE_MSG("Unhandled codec type: error in plug-in registration");
         break;
     }
+
+    m_colorAspects.SetCodecID(m_MfxVideoParams.mfx.CodecId);
+
     mfx_omx_set_defaults_mfxVideoParam_dec(&m_MfxVideoParams);
 
     PortsParams_2_MfxVideoParams();
@@ -2441,7 +2444,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
                     MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Requesting change of output port settings");
                     m_pCallbacks->EventHandler(m_self, m_pAppData, OMX_EventPortSettingsChanged, MFX_OMX_OUTPUT_PORT_INDEX, OMX_IndexParamPortDefinition, NULL);
                 }
-                else if (m_colorAspects.IsColorAspectsCnahged())
+                else if (m_colorAspects.IsColorAspectsChanged())
                 {
                     MFX_OMX_AUTO_TRACE_MSG("Color aspects parsed from bitsream is defferent than passed from framework");
                     MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Color aspects parsed from bitsream is defferent than passed from framework");
@@ -2700,7 +2703,7 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
         }
     }
 
-    if (!bIsEventWasSent && m_colorAspects.IsColorAspectsCnahged())
+    if (!bIsEventWasSent && m_colorAspects.IsColorAspectsChanged())
     {
         MFX_OMX_AUTO_TRACE_MSG("Color aspects parsed from bitsream is defferent than passed from framework");
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Color aspects parsed from bitsream is defferent than passed from framework");

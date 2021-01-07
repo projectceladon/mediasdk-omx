@@ -33,25 +33,39 @@ public:
     void SetFrameworkColorAspects(const android::ColorAspects &colorAspects);
     void UpdateBitsreamColorAspects(const mfxExtVideoSignalInfo &signalInfo);
     void GetOutputColorAspects(android::ColorAspects &outColorAspects);
+    void GetColorAspectsFromVideoSignal(const mfxExtVideoSignalInfo &signalInfo, android::ColorAspects &outColorAspects);
+    void ConvertFrameworkColorAspectToCodecColorAspect(const android::ColorAspects &colorAspects, OMX_VIDEO_PARAM_COLOR_ASPECT &colorParams);
 
-    bool IsColorAspectsCnahged();
+    bool IsColorAspectsChanged();
     void SignalChangedColorAspectsIsSent();
 
-private:
+    void SetCodecID(mfxU32 codecId);
 
-    void MfxToOmxVideoRange(mfxU16 videoRange);
-    void MfxToOmxColourPrimaries(mfxU16 colourPrimaries);
-    void MfxToOmxTransferCharacteristics(mfxU16 transferCharacteristics);
-    void MfxToOmxMatrixCoefficients(mfxU16 MatrixCoefficients);
+private:
+    // mfx to omx
+    // converters VideoSignalInfo from MFX to OMX API
+    void MfxToOmxVideoRange(mfxU16 videoRange, android::ColorAspects::Range &out);
+    void MfxToOmxColourPrimaries(mfxU16 colourPrimaries, android::ColorAspects::Primaries &out);
+    void MfxToOmxTransferCharacteristics(mfxU16 transferCharacteristics, android::ColorAspects::Transfer &out);
+    void MfxToOmxMatrixCoefficients(mfxU16 MatrixCoefficients, android::ColorAspects::MatrixCoeffs &out);
+
+    // omx to mfx
+    // converters VideoSignalInfo from OMX API to MFX
+    void OmxToMfxVideoRange(android::ColorAspects::Range videoRange, mfxU16 &out);
+    void OmxToMfxColourPrimaries(android::ColorAspects::Primaries colourPrimaries, mfxU16 &out);
+    void OmxToMfxTransferCharacteristics(android::ColorAspects::Transfer transferCharacteristics, mfxU16 &out);
+    void OmxToMfxMatrixCoefficients(android::ColorAspects::MatrixCoeffs matrixCoefficients, mfxU16 &out);
 
 private:
 
     // Color aspects passed from the framework.
     android::ColorAspects m_frameworkColorAspects;
-    // Color aspects parsed from the bitstream.
+    // Color aspects parsed from the bitstream. For decoder use only.
     android::ColorAspects m_bitstreamColorAspects;
 
     bool m_bIsColorAspectsChanged;
+
+    mfxU32 m_codecId;
 
     MFX_OMX_CLASS_NO_COPY(MfxOmxColorAspectsWrapper)
 };

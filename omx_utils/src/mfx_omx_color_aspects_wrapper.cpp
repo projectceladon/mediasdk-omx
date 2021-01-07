@@ -25,6 +25,8 @@ MfxOmxColorAspectsWrapper::MfxOmxColorAspectsWrapper()
 {
     MFX_OMX_AUTO_TRACE_FUNC();
 
+    m_codecId = MFX_CODEC_AVC;
+
     // Init all the color aspects to be Unspecified.
     memset(&m_frameworkColorAspects, 0, sizeof(android::ColorAspects));
     memset(&m_bitstreamColorAspects, 0, sizeof(android::ColorAspects));
@@ -33,6 +35,14 @@ MfxOmxColorAspectsWrapper::MfxOmxColorAspectsWrapper()
 MfxOmxColorAspectsWrapper::~MfxOmxColorAspectsWrapper()
 {
     MFX_OMX_AUTO_TRACE_FUNC();
+}
+
+void MfxOmxColorAspectsWrapper::SetCodecID(mfxU32 codecId)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+	m_codecId = codecId;
+	MFX_OMX_AUTO_TRACE_I32(m_codecId);
 }
 
 void MfxOmxColorAspectsWrapper::SetFrameworkColorAspects(const android::ColorAspects &colorAspects)
@@ -56,10 +66,27 @@ void MfxOmxColorAspectsWrapper::UpdateBitsreamColorAspects(const mfxExtVideoSign
     MFX_OMX_AUTO_TRACE_I32(signalInfo.TransferCharacteristics);
     MFX_OMX_AUTO_TRACE_I32(signalInfo.MatrixCoefficients);
 
-    MfxToOmxVideoRange(signalInfo.VideoFullRange);
-    MfxToOmxColourPrimaries(signalInfo.ColourPrimaries);
-    MfxToOmxTransferCharacteristics(signalInfo.TransferCharacteristics);
-    MfxToOmxMatrixCoefficients(signalInfo.MatrixCoefficients);
+    MfxToOmxVideoRange(signalInfo.VideoFullRange, m_bitstreamColorAspects.mRange);
+    MfxToOmxColourPrimaries(signalInfo.ColourPrimaries, m_bitstreamColorAspects.mPrimaries);
+    MfxToOmxTransferCharacteristics(signalInfo.TransferCharacteristics, m_bitstreamColorAspects.mTransfer);
+    MfxToOmxMatrixCoefficients(signalInfo.MatrixCoefficients, m_bitstreamColorAspects.mMatrixCoeffs);
+
+    mfxU16 video_signal_type_present_flag = signalInfo.VideoFormat != 5 ||
+		                                    signalInfo.VideoFullRange != 0 ||
+					                        signalInfo.ColourDescriptionPresent != 0;
+
+	if (MFX_CODEC_VP9 == m_codecId || MFX_CODEC_VP8 == m_codecId)
+	{
+	    video_signal_type_present_flag = false;
+	}
+
+	if (!video_signal_type_present_flag)
+	{
+	    m_bitstreamColorAspects.mRange = android::ColorAspects::RangeUnspecified;
+        m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesUnspecified;
+        m_bitstreamColorAspects.mTransfer  = android::ColorAspects::TransferUnspecified;
+        m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixUnspecified;
+	}
 
     if ((m_bitstreamColorAspects.mRange        != android::ColorAspects::RangeUnspecified &&
          m_bitstreamColorAspects.mRange        != m_frameworkColorAspects.mRange)     ||
@@ -114,7 +141,55 @@ void MfxOmxColorAspectsWrapper::GetOutputColorAspects(android::ColorAspects &out
     MFX_OMX_AUTO_TRACE_I32(outColorAspects.mMatrixCoeffs);
 }
 
-bool MfxOmxColorAspectsWrapper::IsColorAspectsCnahged()
+void MfxOmxColorAspectsWrapper::GetColorAspectsFromVideoSignal(const mfxExtVideoSignalInfo &signalInfo, android::ColorAspects &outColorAspects)
+{
+    bool video_signal_type_present_flag = signalInfo.VideoFormat != 5 ||
+                                            signalInfo.VideoFullRange != 0 ||
+					                        signalInfo.ColourDescriptionPresent != 0;
+
+	if (MFX_CODEC_VP9 == m_codecId || MFX_CODEC_VP8 == m_codecId)
+	{
+	    // No video signal info present in vpx bitstream.
+	    video_signal_type_present_flag = false;
+	}
+
+	if (video_signal_type_present_flag)
+	{
+		MfxToOmxColourPrimaries(signalInfo.ColourPrimaries, outColorAspects.mPrimaries);
+        MfxToOmxVideoRange(signalInfo.VideoFullRange, outColorAspects.mRange);
+        MfxToOmxTransferCharacteristics(signalInfo.TransferCharacteristics, outColorAspects.mTransfer);
+        MfxToOmxMatrixCoefficients(signalInfo.MatrixCoefficients, outColorAspects.mMatrixCoeffs);
+	}
+	else
+	{
+        outColorAspects.mPrimaries = android::ColorAspects::PrimariesUnspecified;
+        outColorAspects.mRange = android::ColorAspects::RangeUnspecified;
+        outColorAspects.mTransfer = android::ColorAspects::TransferUnspecified;
+        outColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixUnspecified;
+    }
+
+    MFX_OMX_AUTO_TRACE_I32(outColorAspects.mRange);
+    MFX_OMX_AUTO_TRACE_I32(outColorAspects.mPrimaries);
+    MFX_OMX_AUTO_TRACE_I32(outColorAspects.mTransfer);
+    MFX_OMX_AUTO_TRACE_I32(outColorAspects.mMatrixCoeffs);
+}
+
+void MfxOmxColorAspectsWrapper::ConvertFrameworkColorAspectToCodecColorAspect(const android::ColorAspects &colorAspects, OMX_VIDEO_PARAM_COLOR_ASPECT &colorParams)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    OmxToMfxColourPrimaries(colorAspects.mPrimaries, colorParams.nColourPrimaries);
+	OmxToMfxVideoRange(colorAspects.mRange, colorParams.nVideoFullRange);
+	OmxToMfxTransferCharacteristics(colorAspects.mTransfer, colorParams.nTransferCharacteristics);
+	OmxToMfxMatrixCoefficients(colorAspects.mMatrixCoeffs, colorParams.nMatrixCoefficients);
+
+    MFX_OMX_AUTO_TRACE_I32(colorParams.nColourPrimaries);
+    MFX_OMX_AUTO_TRACE_I32(colorParams.nVideoFullRange);
+    MFX_OMX_AUTO_TRACE_I32(colorParams.nTransferCharacteristics);
+    MFX_OMX_AUTO_TRACE_I32(colorParams.nMatrixCoefficients);
+}
+
+bool MfxOmxColorAspectsWrapper::IsColorAspectsChanged()
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     MFX_OMX_AUTO_TRACE_I32(m_bIsColorAspectsChanged);
@@ -129,10 +204,7 @@ void MfxOmxColorAspectsWrapper::SignalChangedColorAspectsIsSent()
     m_bIsColorAspectsChanged = false;
 }
 
-
-// Private methods - converters VideoSignalInfo from MFX to OMX API
-
-void MfxOmxColorAspectsWrapper::MfxToOmxVideoRange(mfxU16 videoRange)
+void MfxOmxColorAspectsWrapper::MfxToOmxVideoRange(mfxU16 videoRange, android::ColorAspects::Range &out)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     MFX_OMX_AUTO_TRACE_I32(videoRange);
@@ -140,22 +212,22 @@ void MfxOmxColorAspectsWrapper::MfxToOmxVideoRange(mfxU16 videoRange)
     switch (videoRange)
     {
         case 0:
-            m_bitstreamColorAspects.mRange = android::ColorAspects::RangeLimited;
+            out = android::ColorAspects::RangeLimited;
             break;
 
         case 1:
-            m_bitstreamColorAspects.mRange = android::ColorAspects::RangeFull;
+            out = android::ColorAspects::RangeFull;
             break;
 
         default:
-            m_bitstreamColorAspects.mRange = android::ColorAspects::RangeUnspecified;
+            out = android::ColorAspects::RangeUnspecified;
             break;
     }
 
-    MFX_OMX_AUTO_TRACE_I32(m_bitstreamColorAspects.mRange);
+    MFX_OMX_AUTO_TRACE_I32(out);
 }
 
-void MfxOmxColorAspectsWrapper::MfxToOmxColourPrimaries(mfxU16 colourPrimaries)
+void MfxOmxColorAspectsWrapper::MfxToOmxColourPrimaries(mfxU16 colourPrimaries, android::ColorAspects::Primaries &out)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     MFX_OMX_AUTO_TRACE_I32(colourPrimaries);
@@ -163,42 +235,42 @@ void MfxOmxColorAspectsWrapper::MfxToOmxColourPrimaries(mfxU16 colourPrimaries)
     switch (colourPrimaries)
     {
         case 1:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesBT709_5;
+            out = android::ColorAspects::PrimariesBT709_5;
             break;
 
         case 2:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesUnspecified;
+            out = android::ColorAspects::PrimariesUnspecified;
             break;
 
         case 4:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesBT470_6M;
+            out = android::ColorAspects::PrimariesBT470_6M;
             break;
 
         case 5:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesBT601_6_625;
+            out = android::ColorAspects::PrimariesBT601_6_625;
             break;
 
         case 6:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesBT601_6_525;
+            out = android::ColorAspects::PrimariesBT601_6_525;
             break;
 
         case 8:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesGenericFilm;
+            out = android::ColorAspects::PrimariesGenericFilm;
             break;
 
         case 9:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesBT2020;
+            out = android::ColorAspects::PrimariesBT2020;
             break;
 
         default:
-            m_bitstreamColorAspects.mPrimaries = android::ColorAspects::PrimariesUnspecified;
+            out = android::ColorAspects::PrimariesUnspecified;
             break;
     }
 
-    MFX_OMX_AUTO_TRACE_I32(m_bitstreamColorAspects.mPrimaries);
+    MFX_OMX_AUTO_TRACE_I32(out);
 }
 
-void MfxOmxColorAspectsWrapper::MfxToOmxTransferCharacteristics(mfxU16 transferCharacteristics)
+void MfxOmxColorAspectsWrapper::MfxToOmxTransferCharacteristics(mfxU16 transferCharacteristics, android::ColorAspects::Transfer &out)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     MFX_OMX_AUTO_TRACE_I32(transferCharacteristics);
@@ -206,71 +278,71 @@ void MfxOmxColorAspectsWrapper::MfxToOmxTransferCharacteristics(mfxU16 transferC
     switch (transferCharacteristics)
     {
         case 1:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferSMPTE170M;
+            out = android::ColorAspects::TransferSMPTE170M;
             break;
 
         case 2:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferUnspecified;
+            out = android::ColorAspects::TransferUnspecified;
             break;
 
         case 4:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferGamma22;
+            out = android::ColorAspects::TransferGamma22;
             break;
 
         case 5:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferGamma28;
+            out = android::ColorAspects::TransferGamma28;
             break;
 
         case 6:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferSMPTE170M;
+            out = android::ColorAspects::TransferSMPTE170M;
             break;
 
         case 7:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferSMPTE240M;
+            out = android::ColorAspects::TransferSMPTE240M;
             break;
 
         case 8:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferLinear;
+            out = android::ColorAspects::TransferLinear;
             break;
 
         case 11:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferXvYCC;
+            out = android::ColorAspects::TransferXvYCC;
             break;
 
         case 12:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferBT1361;
+            out = android::ColorAspects::TransferBT1361;
             break;
 
         case 13:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferSRGB;
+            out = android::ColorAspects::TransferSRGB;
             break;
 
         case 14:
         case 15:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferSMPTE170M;
+            out = android::ColorAspects::TransferSMPTE170M;
             break;
 
         case 16:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferST2084;
+            out = android::ColorAspects::TransferST2084;
             break;
 
         case 17:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferST428;
+            out = android::ColorAspects::TransferST428;
             break;
 
         case 18:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferHLG;
+            out = android::ColorAspects::TransferHLG;
             break;
 
         default:
-            m_bitstreamColorAspects.mTransfer = android::ColorAspects::TransferUnspecified;
+            out = android::ColorAspects::TransferUnspecified;
             break;
     }
 
-    MFX_OMX_AUTO_TRACE_I32(m_bitstreamColorAspects.mTransfer);
+    MFX_OMX_AUTO_TRACE_I32(out);
 }
 
-void MfxOmxColorAspectsWrapper::MfxToOmxMatrixCoefficients(mfxU16 matrixCoefficients)
+void MfxOmxColorAspectsWrapper::MfxToOmxMatrixCoefficients(mfxU16 matrixCoefficients, android::ColorAspects::MatrixCoeffs &out)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
     MFX_OMX_AUTO_TRACE_I32(matrixCoefficients);
@@ -278,38 +350,209 @@ void MfxOmxColorAspectsWrapper::MfxToOmxMatrixCoefficients(mfxU16 matrixCoeffici
     switch (matrixCoefficients)
     {
         case 1:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixBT709_5;
+            out = android::ColorAspects::MatrixBT709_5;
             break;
 
         case 2:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixUnspecified;
+            out = android::ColorAspects::MatrixUnspecified;
             break;
 
         case 4:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixBT470_6M;
+            out = android::ColorAspects::MatrixBT470_6M;
             break;
 
         case 5:
         case 6:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixBT601_6;
+            out = android::ColorAspects::MatrixBT601_6;
             break;
 
         case 7:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixSMPTE240M;
+            out = android::ColorAspects::MatrixSMPTE240M;
             break;
 
         case 9:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixBT2020;
+            out = android::ColorAspects::MatrixBT2020;
             break;
 
         case 10:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixBT2020Constant;
+            out = android::ColorAspects::MatrixBT2020Constant;
             break;
 
         default:
-            m_bitstreamColorAspects.mMatrixCoeffs = android::ColorAspects::MatrixUnspecified;
+            out = android::ColorAspects::MatrixUnspecified;
             break;
     }
 
-    MFX_OMX_AUTO_TRACE_I32(m_bitstreamColorAspects.mMatrixCoeffs);
+    MFX_OMX_AUTO_TRACE_I32(out);
+}
+
+void MfxOmxColorAspectsWrapper::OmxToMfxVideoRange(android::ColorAspects::Range videoRange, mfxU16 &out)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    switch (videoRange)
+    {
+        case android::ColorAspects::RangeLimited:
+			out = 0;
+			break;
+
+        case android::ColorAspects::RangeFull:
+            out = 1;
+            break;
+
+        case android::ColorAspects::RangeUnspecified:
+            out = 0xFF;
+            break;
+
+        default:
+            // should never happen there
+            out = 0;
+            ALOGE("Unsupported video range");
+            break;
+    }
+}
+
+void MfxOmxColorAspectsWrapper::OmxToMfxColourPrimaries(android::ColorAspects::Primaries colourPrimaries, mfxU16 &out)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    switch (colourPrimaries)
+    {
+        case android::ColorAspects::PrimariesBT709_5:
+            out = 1;
+            break;
+
+        case android::ColorAspects::PrimariesUnspecified:
+            out = 2;
+            break;
+
+        case android::ColorAspects::PrimariesBT470_6M:
+            out = 4;
+            break;
+
+        case android::ColorAspects::PrimariesBT601_6_625:
+            out = 5;
+            break;
+
+        case android::ColorAspects::PrimariesBT601_6_525:
+            out = 6;
+            break;
+
+        case android::ColorAspects::PrimariesGenericFilm:
+            out = 8;
+            break;
+
+        case android::ColorAspects::PrimariesBT2020:
+            out = 9;
+            break;
+
+        default:
+            out = 0;
+            ALOGE("Unsupported colour primaries");
+            break;
+    }
+}
+
+void MfxOmxColorAspectsWrapper::OmxToMfxTransferCharacteristics(android::ColorAspects::Transfer transferCharacteristics, mfxU16 &out)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    switch (transferCharacteristics)
+    {
+        case android::ColorAspects::TransferSMPTE170M:
+            out = 1;
+            break;
+
+        case android::ColorAspects::TransferUnspecified:
+            out = 2;
+            break;
+
+        case android::ColorAspects::TransferGamma22:
+            out = 4;
+            break;
+
+        case android::ColorAspects::TransferGamma28:
+            out = 5;
+            break;
+
+        case android::ColorAspects::TransferSMPTE240M:
+            out = 7;
+            break;
+
+        case android::ColorAspects::TransferLinear:
+            out = 8;
+            break;
+
+        case android::ColorAspects::TransferXvYCC:
+            out = 11;
+            break;
+
+        case android::ColorAspects::TransferBT1361:
+            out = 12;
+            break;
+
+        case android::ColorAspects::TransferSRGB:
+            out = 13;
+            break;
+
+        case android::ColorAspects::TransferST2084:
+            out = 16;
+            break;
+
+        case android::ColorAspects::TransferST428:
+            out = 17;
+            break;
+
+        case android::ColorAspects::TransferHLG:
+            out = 18;
+            break;
+
+        default:
+            // should never happen there
+            out = 0;
+            ALOGE("Unsupported transfer characteristic");
+            break;
+    }
+}
+
+void MfxOmxColorAspectsWrapper::OmxToMfxMatrixCoefficients(android::ColorAspects::MatrixCoeffs matrixCoefficients, mfxU16 &out)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+
+    switch (matrixCoefficients)
+    {
+        case android::ColorAspects::MatrixBT709_5:
+            out = 1;
+            break;
+
+        case android::ColorAspects::MatrixUnspecified:
+            out = 2;
+            break;
+
+        case android::ColorAspects::MatrixBT470_6M:
+            out = 4;
+            break;
+
+        case android::ColorAspects::MatrixBT601_6:
+            out = 5;
+            break;
+
+        case android::ColorAspects::MatrixSMPTE240M:
+            out = 7;
+            break;
+
+        case android::ColorAspects::MatrixBT2020:
+            out = 9;
+            break;
+
+        case android::ColorAspects::MatrixBT2020Constant:
+            out = 10;
+            break;
+
+        default:
+            // should never happen there
+            out = 0;
+            ALOGE("Unsupported matrix coefficients");
+            break;
+    }
 }

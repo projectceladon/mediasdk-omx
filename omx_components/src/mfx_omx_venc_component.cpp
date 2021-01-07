@@ -267,6 +267,9 @@ void MfxOmxVencComponent::Reset(void)
         MFX_OMX_AUTO_TRACE_MSG("unhandled codec type: BUG in plug-ins registration");
         break;
     }
+
+    m_colorAspects.SetCodecID(m_MfxVideoParams.mfx.CodecId);
+
     mfx_omx_set_defaults_mfxVideoParam_enc(&m_MfxVideoParams);
 
     // default pattern
@@ -405,6 +408,14 @@ OMX_ERRORTYPE MfxOmxVencComponent::PortsParams_2_MfxVideoParams(void)
                 m_OmxMfxVideoParams.ext_buf[idx].opt3.TimingInfoPresent = MFX_CODINGOPTION_OFF;
             }
         }
+
+        idx = m_OmxMfxVideoParams.enableExtParam(MFX_EXTBUFF_VIDEO_SIGNAL_INFO);
+		if (idx >= 0 && idx < MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+        {
+            m_OmxMfxVideoParams.ext_buf[idx].vsi.VideoFormat = 5; // unspecified video format
+            m_OmxMfxVideoParams.ext_buf[idx].vsi.VideoFullRange = 0;
+            m_OmxMfxVideoParams.ext_buf[idx].vsi.ColourDescriptionPresent = 0;
+        }
     }
     else if (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)
     {
@@ -420,6 +431,14 @@ OMX_ERRORTYPE MfxOmxVencComponent::PortsParams_2_MfxVideoParams(void)
             m_OmxMfxVideoParams.ext_buf[idx].opt.AUDelimiter = MFX_CODINGOPTION_OFF;
             m_OmxMfxVideoParams.ext_buf[idx].opt.VuiNalHrdParameters = MFX_CODINGOPTION_OFF;
             m_OmxMfxVideoParams.ext_buf[idx].opt.PicTimingSEI = MFX_CODINGOPTION_OFF;
+        }
+
+        idx = m_OmxMfxVideoParams.enableExtParam(MFX_EXTBUFF_VIDEO_SIGNAL_INFO);
+		if (idx >= 0 && idx < MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+        {
+            m_OmxMfxVideoParams.ext_buf[idx].vsi.VideoFormat = 5; // unspecified video format
+            m_OmxMfxVideoParams.ext_buf[idx].vsi.VideoFullRange = 0;
+            m_OmxMfxVideoParams.ext_buf[idx].vsi.ColourDescriptionPresent = 0;
         }
     }
     else if (MFX_CODEC_VP9 == m_MfxVideoParams.mfx.CodecId)
@@ -972,6 +991,28 @@ OMX_ERRORTYPE MfxOmxVencComponent::ValidateConfig(
         m_MfxVideoParams.AsyncDepth = GetAsyncDepth();
         omx_res = OMX_ErrorNone;
         break;
+    case MfxOmx_IndexGoogleDescribeColorAspects:
+        {
+            MFX_OMX_AUTO_TRACE_MSG("MfxOmx_IndexGoogleDescribeColorAspects");
+            if (kind != eSetConfig) break;
+            const android::DescribeColorAspectsParams *colorAspectsParams =
+                    static_cast<const android::DescribeColorAspectsParams *>(pConfig);
+            OMX_VIDEO_PARAM_COLOR_ASPECT colorParams;
+            colorParams.nSize = sizeof(OMX_VIDEO_PARAM_COLOR_ASPECT);
+            colorParams.nVersion.s.nVersionMajor = 1;
+            colorParams.nVersion.s.nVersionMinor = 0;
+            colorParams.nVersion.s.nRevision = 0;
+            colorParams.nVersion.s.nStep = 0;
+            colorParams.nPortIndex = 1;
+
+            m_colorAspects.ConvertFrameworkColorAspectToCodecColorAspect(colorAspectsParams->sAspects, colorParams);
+
+            omx_res = ValidateAndConvert(
+                config,
+                nIndex,
+                static_cast<OMX_VIDEO_PARAM_COLOR_ASPECT*>(&colorParams));
+            break;
+        }
     default:
         omx_res = OMX_ErrorUnsupportedIndex;
         break;
@@ -1819,6 +1860,24 @@ OMX_ERRORTYPE MfxOmxVencComponent::GetConfig(
                 static_cast<OMX_VIDEO_PARAM_ENCODE_VUI_CONTROL_PARAM*>(pConfig),
                 m_OmxMfxVideoParams);
             break;
+       case MfxOmx_IndexGoogleDescribeColorAspects:
+           {
+                MFX_OMX_AUTO_TRACE_MSG("MfxOmx_IndexGoogleDescribeColorAspects");
+                android::DescribeColorAspectsParams *colorAspectsParams = static_cast<android::DescribeColorAspectsParams *>(pConfig);
+                int idx = m_OmxMfxVideoParams.getExtParamIdx(MFX_EXTBUFF_VIDEO_SIGNAL_INFO);
+                if (idx < 0)
+                {
+                    return OMX_ErrorInsufficientResources;
+				}
+                else if (idx >= MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+                {
+                    return OMX_ErrorNoMore;
+                }
+
+                m_colorAspects.GetColorAspectsFromVideoSignal(m_OmxMfxVideoParams.ext_buf[idx].vsi, colorAspectsParams->sAspects);
+                omx_res = OMX_ErrorNone;
+                break;
+            }
         default:
             MFX_OMX_AUTO_TRACE_MSG("unknown nIndex");
             omx_res = OMX_ErrorUnsupportedIndex;
