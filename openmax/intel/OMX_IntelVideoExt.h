@@ -316,6 +316,17 @@ typedef struct OMX_VIDEO_PARAM_SFC {
     OMX_U32 nOutputHeight;             // nOutputHeight is from ISV for downscaling
 } OMX_VIDEO_PARAM_SFC;
 
+// Set colour aspect info
+typedef struct OMX_VIDEO_PARAM_COLOR_ASPECT {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_U16 nColourPrimaries;
+    OMX_U16 nVideoFullRange;
+    OMX_U16 nMatrixCoefficients;
+    OMX_U16 nTransferCharacteristics;
+} OMX_VIDEO_PARAM_COLOR_ASPECT;
+
 #define OMX_BUFFERFLAG_TFF 0x00010000
 #define OMX_BUFFERFLAG_BFF 0x00020000
 

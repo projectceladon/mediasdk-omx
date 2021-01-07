@@ -411,6 +411,16 @@ const char* mfx_omx_code_to_string(mfxStatus sts);
 
 /*------------------------------------------------------------------------------*/
 
+#define MFX_OMX_AT__OMX_VIDEO_CONFIG_COLORASPECT(_coloraspect) \
+    MFX_OMX_AT__OMX_STRUCT(_coloraspect); \
+    MFX_OMX_AUTO_TRACE_I32(_coloraspect.nPortIndex); \
+    MFX_OMX_AUTO_TRACE_I32(_coloraspect.nColourPrimaries); \
+    MFX_OMX_AUTO_TRACE_I32(_coloraspect.nVideoFullRange); \
+    MFX_OMX_AUTO_TRACE_I32(_coloraspect.nMatrixCoefficients); \
+    MFX_OMX_AUTO_TRACE_I32(_coloraspect.nTransferCharacteristics);
+
+/********************************************************************************/
+
 #define MFX_OMX_AT__OMX_VIDEO_CONFIG_INTEL_BITRATETYPE(_config_intel_bitrate_type) \
     MFX_OMX_AT__OMX_STRUCT(_config_intel_bitrate_type); \
     MFX_OMX_AUTO_TRACE_I32(_config_intel_bitrate_type.nPortIndex); \
@@ -903,6 +913,16 @@ const char* mfx_omx_code_to_string(mfxStatus sts);
 
 /*------------------------------------------------------------------------------*/
 
+#define MFX_OMX_AT__mfxExtVideoSignalInfo(_opt) \
+    MFX_OMX_AUTO_TRACE_I32(_opt.VideoFormat); \
+    MFX_OMX_AUTO_TRACE_I32(_opt.VideoFullRange); \
+    MFX_OMX_AUTO_TRACE_I32(_opt.ColourDescriptionPresent); \
+    MFX_OMX_AUTO_TRACE_I32(_opt.ColourPrimaries); \
+    MFX_OMX_AUTO_TRACE_I32(_opt.TransferCharacteristics); \
+    MFX_OMX_AUTO_TRACE_I32(_opt.MatrixCoefficients);
+
+/*------------------------------------------------------------------------------*/
+
 #define MFX_OMX_AT__mfxExtParams(_num, _params) \
     if(_params) \
     { \
@@ -926,6 +946,9 @@ const char* mfx_omx_code_to_string(mfxStatus sts);
                 break; \
               case MFX_EXTBUFF_AVC_TEMPORAL_LAYERS: \
                 MFX_OMX_AT__mfxExtEncoderTemporalLayersOption((*((mfxExtAvcTemporalLayers*)_params[i]))); \
+                break; \
+              case MFX_EXTBUFF_VIDEO_SIGNAL_INFO: \
+                MFX_OMX_AT__mfxExtVideoSignalInfo((*((mfxExtVideoSignalInfo*)_params[i]))); \
                 break; \
               default: \
                 MFX_OMX_AUTO_TRACE_MSG("unknown ext buffer"); \
