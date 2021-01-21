@@ -38,7 +38,7 @@ static const OMX_VIDEO_PARAM_PORTFORMATTYPE g_h265ve_output_formats[] =
     MFX_OMX_DECLARE_BST_OUTPUT_FORMAT(OMX_VIDEO_CodingHEVC)
 };
 
-#define g_h265ve_profile_levels g_h265_profile_levels
+#define g_h265ve_profile_levels g_h265_ve_profile_levels
 
 #define mfx_omx_create_h265ve_ports mfx_omx_create_port
 

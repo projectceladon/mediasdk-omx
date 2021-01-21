@@ -68,6 +68,13 @@ static const MfxOmxProfileLevelTable g_h265_profile_levels[] =
 
 /*------------------------------------------------------------------------------*/
 
+static const MfxOmxProfileLevelTable g_h265_ve_profile_levels[] =
+{
+    { MFX_OMX_VIDEO_HEVCProfileMain, MFX_OMX_VIDEO_HEVCMainTierLevel51 }
+};
+
+/*------------------------------------------------------------------------------*/
+
 static const MfxOmxProfileLevelTable g_mp2_profile_levels[] =
 {
     { OMX_VIDEO_MPEG2ProfileSimple, OMX_VIDEO_MPEG2LevelLL },
