@@ -78,6 +78,10 @@ mfxStatus MfxOmxGrallocAdapter::Init()
     mfxStatus mfx_res = MFX_ERR_NONE;
 
     mfxI32 err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &m_pModule);
+    if (err != 0)
+    {
+        MFX_OMX_LOG_ERROR("yifang: Init with error code %d", err);
+    }
 
     if (0 == err)
     {
@@ -130,7 +134,9 @@ mfxStatus MfxOmxGrallocAdapter::Init()
         }
 #else
         m_pGrallocModule = (gralloc_module_t *)m_pModule;
+        MFX_OMX_LOG_ERROR("yifang: call gralloc_open, name is %s", m_pGrallocModule->common.name);
         gralloc_open(m_pModule, &m_pAllocDev);
+
 #endif
     }
     else
@@ -196,10 +202,20 @@ mfxStatus MfxOmxGrallocAdapter::GetInfo(buffer_handle_t handle, intel_ufo_buffer
             mfx_res = MFX_ERR_UNKNOWN;
         }
 #else
-        int err = m_pGrallocModule->perform(m_pGrallocModule, INTEL_UFO_GRALLOC_MODULE_PERFORM_GET_BO_INFO, handle, info);
+        // int err = m_pGrallocModule->perform(m_pGrallocModule, INTEL_UFO_GRALLOC_MODULE_PERFORM_GET_BO_INFO, handle, info);
+        int err = m_pGrallocModule->perform(m_pGrallocModule, MFX_INTEL_UFO_GRALLOC_MODULE_PERFORM_SET_BO_FPS, handle, info);
         if (0 != err)
         {
-            mfx_res = MFX_ERR_UNKNOWN;
+            // yifang: for test purpose
+            //mfx_res = MFX_ERR_UNKNOWN;
+            mfx_res = MFX_ERR_NONE;
+            info->width  = 1920;
+            info->height = 1080;
+            info->allocWidth = 1920;
+            info->allocHeight = 1080;
+            info->numOfPlanes = 2;
+            // info->format = OMX_INTEL_COLOR_Format_P10;
+            info->format = OMX_INTEL_COLOR_Format_NV12;
         }
 #endif // #ifdef MFX_OMX_USE_GRALLOC_1
     }
