@@ -517,6 +517,14 @@ mfxStatus MfxOmxVaapiFrameAllocator::CreateSurfaceFromGralloc(const mfxU8* handl
     surfExtBuf.width = width;
     surfExtBuf.height = height;
     surfExtBuf.pitches[0] = info.pitch;
+    surfExtBuf.pitches[1] = info.pitch;
+    surfExtBuf.pitches[2] = 0;
+    surfExtBuf.pitches[3] = 0;
+    surfExtBuf.offsets[0] = 0;
+    surfExtBuf.offsets[1] = info.pitch * ((height + 31) & ~31); // Gralloc buffer has been aligned with 32 pixels
+    surfExtBuf.offsets[2] = 0;
+    surfExtBuf.offsets[3] = 0;
+    surfExtBuf.data_size = info.pitch * ((height + 31) & ~31) * 1.5;
     surfExtBuf.num_planes = 2;
     surfExtBuf.num_buffers = 1;
 #ifdef MFX_OMX_USE_PRIME
