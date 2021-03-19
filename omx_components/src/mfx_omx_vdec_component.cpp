@@ -2218,7 +2218,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
         }
         if (MFX_ERR_NONE == mfx_res)
         {
-            if (m_MfxVideoParams.mfx.FrameInfo.Width > 4096 || m_MfxVideoParams.mfx.FrameInfo.Height > 4096)
+            if (m_MfxVideoParams.mfx.FrameInfo.Width > 8192 || m_MfxVideoParams.mfx.FrameInfo.Height > 8192)
             {
                 mfx_res = MFX_ERR_UNSUPPORTED;
             }
@@ -2542,7 +2542,7 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
     }
     if (MFX_ERR_NONE == mfx_res)
     {
-        if (newVideoParams.mfx.FrameInfo.Width > 4096 || newVideoParams.mfx.FrameInfo.Height > 4096)
+        if (newVideoParams.mfx.FrameInfo.Width > 8192 || newVideoParams.mfx.FrameInfo.Height > 8192)
         {
             mfx_res = MFX_ERR_UNSUPPORTED;
         }
