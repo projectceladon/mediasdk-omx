@@ -84,6 +84,8 @@ public:
     virtual mfxStatus SaveHeaders(mfxBitstream *pSPS, mfxBitstream *pPPS, bool isReset) = 0;
     // detect interlaced content
     virtual bool IsSetInterlaceFlag(bool * bInterlaced) = 0;
+    // detect head include valid SPS etc
+    virtual bool IsValidHeaders(void) = 0;
 
 #ifdef ENABLE_READ_SEI
     // get saved SEI (right now only for HEVC 10 bit SeiHDRStaticInfo)
@@ -136,6 +138,11 @@ public:
     {
         *bInterlaced = false;
         return false;
+    }
+    // detect head include valid SPS etc
+    virtual bool IsValidHeaders()
+    {
+        return true;
     }
 
 #ifdef ENABLE_READ_SEI
@@ -203,6 +210,8 @@ public:
     virtual mfxStatus SaveHeaders(mfxBitstream *pSPS, mfxBitstream *pPPS, bool isReset);
     // detect interlaced content
     virtual bool IsSetInterlaceFlag(bool * bInterlaced);
+    // detect head include valid SPS etc
+    virtual bool IsValidHeaders();
 
 #ifdef ENABLE_READ_SEI
     // get saved SEI (right now only for HEVC 10 bit SeiHDRStaticInfo)

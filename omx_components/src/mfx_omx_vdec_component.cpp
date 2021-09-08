@@ -2215,6 +2215,9 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
                 else
                     m_MfxVideoParams.mfx.FrameInfo.FourCC = MFX_FOURCC_P010;
             }
+
+            if ((MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId) && (!m_pOmxBitstream->GetFrameConstructor()->IsValidHeaders()))
+                mfx_res = MFX_ERR_UNSUPPORTED;
         }
         if (MFX_ERR_NONE == mfx_res)
         {
