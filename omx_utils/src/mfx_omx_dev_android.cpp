@@ -56,7 +56,19 @@ const mfx_device_item listLegalDevIDs[] = {
     { 0x0A87, MFX_HW_BXT},
     { 0x1A84, MFX_HW_BXT}, //BXT-PRO?
     /* APL */
-    { 0x5A84, MFX_HW_BXT}
+    { 0x5A84, MFX_HW_BXT},
+    /* TGL */
+    { 0x9A40, MFX_HW_TGL_LP},
+    { 0x9A49, MFX_HW_TGL_LP},
+    { 0x9A59, MFX_HW_TGL_LP},
+    { 0x9A60, MFX_HW_TGL_LP},
+    { 0x9A68, MFX_HW_TGL_LP},
+    { 0x9A70, MFX_HW_TGL_LP},
+    { 0x9A78, MFX_HW_TGL_LP},
+    { 0x9AC0, MFX_HW_TGL_LP},
+    { 0x9AC9, MFX_HW_TGL_LP},
+    { 0x9AD9, MFX_HW_TGL_LP},
+    { 0x9AF8, MFX_HW_TGL_LP},
 };
 
 typedef struct drm_i915_getparam {
