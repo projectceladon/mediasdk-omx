@@ -548,7 +548,8 @@ enum
 enum eMfxOmxHwType
 {
     MFX_HW_UNKNOWN = 0,
-    MFX_HW_BXT
+    MFX_HW_BXT,
+    MFX_HW_TGL_LP
 };
 
 /*------------------------------------------------------------------------------*/
