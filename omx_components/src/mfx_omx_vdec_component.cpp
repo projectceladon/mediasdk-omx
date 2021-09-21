@@ -2215,6 +2215,9 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
                 else
                     m_MfxVideoParams.mfx.FrameInfo.FourCC = MFX_FOURCC_P010;
             }
+
+            if ((MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId) && (!m_pOmxBitstream->GetFrameConstructor()->IsValidHeaders()))
+                mfx_res = MFX_ERR_UNSUPPORTED;
         }
         // A WA for one GPU hang issue for android.security.cts.StagefrightTest#testBug_63045918
         if (m_bUseSystemMemory && (MFX_HW_TGL_LP == m_pDevice->GetPlatformType()) && (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)
