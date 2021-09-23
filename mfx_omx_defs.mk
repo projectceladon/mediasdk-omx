@@ -97,6 +97,9 @@ ifneq ($(filter $(MFX_ANDROID_VERSION), MFX_Q MFX_R),)
   MFX_OMX_CFLAGS += -DENABLE_READ_SEI
 endif
 
+# Enable vpp for decoder
+MFX_OMX_CFLAGS += -DENABLE_DECVPP
+
 # Setting usual paths to include files
 MFX_OMX_INCLUDES := $(LOCAL_PATH)/include
 
