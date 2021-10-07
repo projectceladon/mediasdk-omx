@@ -55,6 +55,7 @@ const mfx_device_item listLegalDevIDs[] = {
     { 0x4551, MFX_HW_EHL},
     { 0x4569, MFX_HW_EHL},
     { 0x4571, MFX_HW_EHL},
+    { 0x4555, MFX_HW_EHL},
     /* BXT */
     { 0x0A84, MFX_HW_BXT},
     { 0x0A85, MFX_HW_BXT},
