@@ -2217,7 +2217,7 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
             }
         }
         // A WA for one GPU hang issue for android.security.cts.StagefrightTest#testBug_63045918
-        if (m_bUseSystemMemory && (MFX_HW_TGL_LP == m_pDevice->GetPlatformType()) && (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)
+        if (m_bUseSystemMemory && (MFX_HW_TGL_LP == m_pDevice->GetPlatformType() || MFX_HW_EHL == m_pDevice->GetPlatformType()) && (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)
                 && (MFX_PROFILE_HEVC_MAIN == m_MfxVideoParams.mfx.CodecProfile) && (MFX_LEVEL_HEVC_62 == m_MfxVideoParams.mfx.CodecLevel)
                 && (416 == m_MfxVideoParams.mfx.FrameInfo.Width) && (240 == m_MfxVideoParams.mfx.FrameInfo.Height))
         {
