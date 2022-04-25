@@ -261,6 +261,11 @@ void mfx_omx_adjust_port_definition(OMX_PARAM_PORTDEFINITIONTYPE* pPortDef,
                     const mfxU32 compressionRatio = (pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingVP8) ? 2 : 4;
                     pPortDef->nBufferSize = MFX_OMX_MAX(2048 * 2048 * 3 / 2 / compressionRatio, bufferSize);
                 }
+                else if (OMX_VIDEO_CodingHEVC == pPortDef->format.video.eCompressionFormat)
+                {
+                    const mfxU32 compressionRatio = 8;
+                    pPortDef->nBufferSize = 7680 * 4320 * 3 / 2 / compressionRatio;
+                }
                 else
                 {
                     pPortDef->nBufferSize = MFX_OMX_MAX(bufferSize, 1024 * 1024);

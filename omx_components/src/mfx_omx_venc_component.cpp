@@ -22,6 +22,7 @@
 #include "mfx_omx_defaults.h"
 #include "mfx_omx_venc_component.h"
 #include "mfx_omx_vaapi_allocator.h"
+#include <cutils/properties.h>
 
 /*------------------------------------------------------------------------------*/
 
@@ -99,6 +100,25 @@ MfxOmxVencComponent::MfxOmxVencComponent(OMX_ERRORTYPE &error,
     m_dbg_encout(NULL)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
+
+#ifdef HEVC_8K_DEBUG
+    m_AsyncDepth = 0;
+    m_InputBufNum = 0;
+
+    char szDepth[128] = {'\0'};
+    char szNum[128] = {'\0'};
+    if (property_get("omx.async.depth", szDepth, 0))
+    {
+        m_AsyncDepth = atoi(szDepth);
+    }
+    if (property_get("omx.input.num", szNum, 0))
+    {
+        m_InputBufNum = atoi(szNum);
+    }
+
+    if (!m_AsyncDepth) m_AsyncDepth = 2;
+    if (!m_InputBufNum) m_InputBufNum = 3;
+#endif
 
     MFX_OMX_ZERO_MEMORY(m_NextConfig);
     m_NextConfig.mfxparams = &m_OmxMfxVideoParams;
@@ -229,8 +249,10 @@ OMX_ERRORTYPE MfxOmxVencComponent::Init(void)
     }
     if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
     {
-        if ((MFX_HW_BXT == m_pDevice->GetPlatformType()) &&
-            (MFX_CODEC_AVC == m_MfxVideoParams.mfx.CodecId))
+        if (((MFX_HW_BXT == m_pDevice->GetPlatformType()) &&
+            (MFX_CODEC_AVC == m_MfxVideoParams.mfx.CodecId)) ||
+            ((MFX_HW_TGL_LP == m_pDevice->GetPlatformType()) &&
+            (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)))
             m_MfxVideoParams.mfx.LowPower = MFX_CODINGOPTION_ON;
     }
     if (OMX_ErrorNone == error)
@@ -434,11 +456,22 @@ OMX_ERRORTYPE MfxOmxVencComponent::PortsParams_2_MfxVideoParams(void)
         }
 
         idx = m_OmxMfxVideoParams.enableExtParam(MFX_EXTBUFF_VIDEO_SIGNAL_INFO);
-		if (idx >= 0 && idx < MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+        if (idx >= 0 && idx < MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
         {
             m_OmxMfxVideoParams.ext_buf[idx].vsi.VideoFormat = 5; // unspecified video format
             m_OmxMfxVideoParams.ext_buf[idx].vsi.VideoFullRange = 0;
             m_OmxMfxVideoParams.ext_buf[idx].vsi.ColourDescriptionPresent = 0;
+        }
+
+        if (IS_8K_VIDEO(m_MfxVideoParams.mfx.FrameInfo.Width, m_MfxVideoParams.mfx.FrameInfo.Height) ||
+            IS_4K_VIDEO(m_MfxVideoParams.mfx.FrameInfo.Width, m_MfxVideoParams.mfx.FrameInfo.Height))
+        {
+            idx = m_OmxMfxVideoParams.enableExtParam(MFX_EXTBUFF_HEVC_TILES);
+            if (idx >= 0 && idx < MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM)
+            {
+                m_OmxMfxVideoParams.ext_buf[idx].hevcTiles.NumTileRows = 1;
+                m_OmxMfxVideoParams.ext_buf[idx].hevcTiles.NumTileColumns = 2;
+            }
         }
     }
     else if (MFX_CODEC_VP9 == m_MfxVideoParams.mfx.CodecId)
@@ -516,8 +549,18 @@ mfxU16 MfxOmxVencComponent::GetAsyncDepth(void)
     {
         asyncDepth = 1;
     }
-    else if (frameRate > 30) asyncDepth = 2; // 60 fps camera
-
+    else if (IS_8K_VIDEO(m_pInPortDef->format.video.nFrameWidth, m_pInPortDef->format.video.nFrameHeight)
+        || IS_4K_VIDEO(m_pInPortDef->format.video.nFrameWidth, m_pInPortDef->format.video.nFrameHeight))
+    {
+        asyncDepth = 4;
+#ifdef HEVC_8K_DEBUG
+        asyncDepth = m_AsyncDepth;
+#endif
+    }
+    else if (frameRate > 30)
+    {
+        asyncDepth = 2;
+    }
 
     MFX_OMX_AUTO_TRACE_I32(asyncDepth);
     return asyncDepth;
@@ -1084,7 +1127,6 @@ OMX_ERRORTYPE MfxOmxVencComponent::UpdateBufferCount(OMX_U32 nPortIndex)
     {
         MFX_OMX_AUTO_TRACE_MSG("INPUT_PORT_INDEX");
         mfxFrameAllocRequest request = {};
-
         mfxStatus mfx_res = m_pENC->QueryIOSurf(&m_MfxVideoParams, &request);
         MFX_OMX_AUTO_TRACE_I32(mfx_res);
 
@@ -1093,6 +1135,10 @@ OMX_ERRORTYPE MfxOmxVencComponent::UpdateBufferCount(OMX_U32 nPortIndex)
             m_nSurfacesNum = MFX_OMX_MAX(m_nSurfacesNum,
                                          MFX_OMX_MAX(request.NumFrameSuggested, request.NumFrameMin));
             m_nSurfacesNum = MFX_OMX_MAX(m_nSurfacesNum, 2);
+
+#ifdef HEVC_8K_DEBUG
+            m_nSurfacesNum = m_InputBufNum;
+#endif
 
             m_pInPortDef->nBufferCountMin = request.NumFrameMin;
             m_pInPortDef->nBufferCountActual = m_nSurfacesNum;
