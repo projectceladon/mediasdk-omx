@@ -2208,11 +2208,13 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
                 MFX_OMX_AUTO_TRACE_MSG("WARNING: m_bInterlaced was not set");
             MFX_OMX_AUTO_TRACE_I32(m_bInterlaced);
 
-            if ((MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId) && (MFX_PROFILE_HEVC_MAIN10 == m_MfxVideoParams.mfx.CodecProfile))
+            if (((MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId) && (MFX_PROFILE_HEVC_MAIN10 == m_MfxVideoParams.mfx.CodecProfile)) ||
+                ((MFX_CODEC_VP9 == m_MfxVideoParams.mfx.CodecId) && (MFX_PROFILE_VP9_2 == m_MfxVideoParams.mfx.CodecProfile)))
             {
-                if (m_bUseSystemMemory)
+                if (m_bUseSystemMemory) {
+                    ALOGE("We don't support 10bit decoding when system memory is in use");
                     mfx_res = MFX_ERR_UNSUPPORTED;
-                else
+                } else
                     m_MfxVideoParams.mfx.FrameInfo.FourCC = MFX_FOURCC_P010;
             }
         }
