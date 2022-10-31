@@ -456,9 +456,8 @@ OMX_ERRORTYPE MfxOmxVdecComponent::MfxVideoParams_2_PortsParams(void)
     MFX_OMX_AUTO_TRACE_FUNC();
     OMX_ERRORTYPE omx_res = OMX_ErrorNone;
 
-    // Using cropW/cropH to workaround the app issue when an app doesn't handle OMX_IndexConfigCommonOutputCrop
-    mfxU16 nFrameWidth = m_MfxVideoParams.mfx.FrameInfo.CropW;
-    mfxU16 nFrameHeight = m_MfxVideoParams.mfx.FrameInfo.CropH;
+    mfxU16 nFrameWidth = m_MfxVideoParams.mfx.FrameInfo.Width;
+    mfxU16 nFrameHeight = m_MfxVideoParams.mfx.FrameInfo.Height;
 
     // For system memory we use real Width/Height
     if (m_bUseSystemMemory && !m_bLegacyAdaptivePlayback)
@@ -2541,6 +2540,8 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
     MFX_OMX_AUTO_TRACE_I32(m_nMaxFrameHeight);
     MFX_OMX_AUTO_TRACE_I32(newVideoParams.mfx.FrameInfo.Width);
     MFX_OMX_AUTO_TRACE_I32(newVideoParams.mfx.FrameInfo.Height);
+    MFX_OMX_AUTO_TRACE_I32(newVideoParams.mfx.FrameInfo.CropW);
+    MFX_OMX_AUTO_TRACE_I32(newVideoParams.mfx.FrameInfo.CropH);
 
     MFX_OMX_AUTO_TRACE_I32(mfx_res);
     if (MFX_ERR_NONE != mfx_res)
@@ -2953,6 +2954,33 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
         else pSyncPoint = m_pFreeSyncPoint;
 
         if (NULL != pWorkSurface) pWorkSurface->Data.FrameOrder = m_nLockedSurfacesNum;
+
+        if (m_MfxVideoParams.mfx.FrameInfo.Width < 2048 || m_MfxVideoParams.mfx.FrameInfo.Height < 2048)
+        {
+            // This is a work around solution for some apps which can not handle crop properly
+            if (pWorkSurface && m_pDevice && !m_bUseSystemMemory)
+            {
+               MfxOmxVaapiFrameAllocator* pvaAllocator = (MfxOmxVaapiFrameAllocator*)m_pDevice->GetFrameAllocator();
+               if (pvaAllocator)
+               {
+                  mfxFrameData data;
+                  memset(&data, 0, sizeof(mfxFrameData));
+                  // This takes only less than 1ms
+                  mfx_res = pvaAllocator->LockFrame(pWorkSurface->Data.MemId, &data);
+                  if (MFX_ERR_NONE == mfx_res) {
+                     mfxU8 *pYdata = data.Y;
+                     mfxU8 *pUVdata = data.UV;
+                     uint32_t stride = MFX_OMX_MEM_ALIGN(m_pOutPortDef->format.video.nFrameWidth, 64);
+                     memset(pYdata, 16, stride * m_pOutPortDef->format.video.nFrameHeight);
+                     memset(pUVdata, 128, stride * m_pOutPortDef->format.video.nFrameHeight / 2);
+                     mfx_res = pvaAllocator->UnlockFrame(pWorkSurface->Data.MemId, &data);
+                  }
+               }
+            }
+            // always return success
+            mfx_res = MFX_ERR_NONE;
+        }
+
         // Decoding bitstream. If function called on EOS then drainnig begins and we must
         // wait while decoder can accept input data
         do

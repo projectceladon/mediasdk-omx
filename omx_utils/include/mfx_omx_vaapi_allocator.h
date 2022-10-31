@@ -55,11 +55,11 @@ public:
     void RegisterBuffer(buffer_handle_t handle);
     void UnregisterBuffer(buffer_handle_t handle);
 
-protected:
     virtual mfxStatus LockFrame(mfxMemId mid, mfxFrameData *ptr);
     virtual mfxStatus UnlockFrame(mfxMemId mid, mfxFrameData *ptr);
     virtual mfxStatus GetFrameHDL(mfxMemId mid, mfxHDL *handle);
 
+protected:
     virtual mfxStatus CheckRequestType(mfxFrameAllocRequest *request);
     virtual mfxStatus ReleaseResponse(mfxFrameAllocResponse *response);
     virtual mfxStatus AllocImpl(mfxFrameAllocRequest *request, mfxFrameAllocResponse *response);
