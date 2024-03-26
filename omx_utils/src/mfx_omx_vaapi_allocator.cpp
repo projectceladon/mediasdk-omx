@@ -505,7 +505,7 @@ mfxStatus MfxOmxVaapiFrameAllocator::CreateSurfaceFromGralloc(const mfxU8* handl
     mfxU32 va_fourcc = ConvertGrallocFourccToVAFormat(info.format);
     mfxU32 rt_format = ConvertVAFourccToVARTFormat(va_fourcc);
 
-    VASurfaceAttrib attribs[2];
+    VASurfaceAttrib attribs[3];
     MFX_OMX_ZERO_MEMORY(attribs);
 
     VASurfaceAttribExternalBuffers surfExtBuf;
@@ -516,17 +516,27 @@ mfxStatus MfxOmxVaapiFrameAllocator::CreateSurfaceFromGralloc(const mfxU8* handl
     surfExtBuf.pixel_format = va_fourcc;
     surfExtBuf.width = width;
     surfExtBuf.height = height;
-    surfExtBuf.pitches[0] = info.pitch;
-    surfExtBuf.pitches[1] = info.pitch;
-    surfExtBuf.pitches[2] = 0;
-    surfExtBuf.pitches[3] = 0;
-    surfExtBuf.offsets[0] = 0;
-    surfExtBuf.offsets[1] = info.pitch * ((height + 31) & ~31); // Gralloc buffer has been aligned with 32 pixels
-    surfExtBuf.offsets[2] = 0;
-    surfExtBuf.offsets[3] = 0;
-    surfExtBuf.data_size = info.pitch * ((height + 31) & ~31) * 1.5;
-    surfExtBuf.num_planes = 2;
-    surfExtBuf.num_buffers = 1;
+    if (VA_FOURCC_RGBA == va_fourcc)
+    {
+        surfExtBuf.pitches[0] = info.pitch;
+        surfExtBuf.data_size = info.pitch * height;
+        surfExtBuf.num_planes = info.numOfPlanes;
+        surfExtBuf.num_buffers = 1;
+    }
+    else
+    {
+        surfExtBuf.pitches[0] = info.pitch;
+        surfExtBuf.pitches[1] = info.pitch;
+        surfExtBuf.pitches[2] = 0;
+        surfExtBuf.pitches[3] = 0;
+        surfExtBuf.offsets[0] = 0;
+        surfExtBuf.offsets[1] = info.pitch * ((height + 31) & ~31); // Gralloc buffer has been aligned with 32 pixels
+        surfExtBuf.offsets[2] = 0;
+        surfExtBuf.offsets[3] = 0;
+        surfExtBuf.data_size = info.pitch * ((height + 31) & ~31) * 1.5;
+        surfExtBuf.num_planes = 2;
+        surfExtBuf.num_buffers = 1;
+    }
 #ifdef MFX_OMX_USE_PRIME
     surfExtBuf.buffers = (uintptr_t *)&(info.prime);
     surfExtBuf.flags = VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
@@ -548,6 +558,11 @@ mfxStatus MfxOmxVaapiFrameAllocator::CreateSurfaceFromGralloc(const mfxU8* handl
     attribs[1].flags = VA_SURFACE_ATTRIB_SETTABLE;
     attribs[1].value.type = VAGenericValueTypePointer;
     attribs[1].value.value.p = (void *)&surfExtBuf;
+
+    attribs[2].type = (VASurfaceAttribType)VASurfaceAttribUsageHint;
+    attribs[2].flags = VA_SURFACE_ATTRIB_SETTABLE;
+    attribs[2].value.type = VAGenericValueTypeInteger;
+    attribs[2].value.value.i = bIsDecodeTarget ? VA_SURFACE_ATTRIB_USAGE_HINT_DECODER : VA_SURFACE_ATTRIB_USAGE_HINT_ENCODER;
 
     VAStatus va_res = vaCreateSurfaces(m_dpy, rt_format,
         width, height,
