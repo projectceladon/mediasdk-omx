@@ -105,15 +105,15 @@ void mfx_omx_set_defaults_mfxVideoParam_enc(mfxVideoParam* params)
         break;
     case MFX_CODEC_HEVC:
         params->mfx.CodecProfile = MFX_PROFILE_HEVC_MAIN;
-        params->mfx.CodecLevel = MFX_LEVEL_HEVC_51;
+        params->mfx.CodecLevel = MFX_LEVEL_HEVC_61;
         params->mfx.TargetUsage = MFX_TARGETUSAGE_BEST_SPEED;
         params->mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
         params->mfx.TargetKbps = 3000;
         params->mfx.RateControlMethod = MFX_RATECONTROL_CBR;
         params->mfx.GopPicSize = 16;
-        params->mfx.GopRefDist = 1;
+        params->mfx.GopRefDist = 3;
         params->mfx.NumSlice = 1;
-        params->mfx.NumRefFrame = 1;
+        params->mfx.NumRefFrame = 4;
         break;
 	case MFX_CODEC_VP9:
         params->mfx.CodecProfile = MFX_PROFILE_VP9_0;

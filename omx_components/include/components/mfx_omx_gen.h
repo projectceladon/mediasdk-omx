@@ -59,7 +59,7 @@ static const MfxOmxProfileLevelTable g_h264_profile_levels[] =
 
 static const MfxOmxProfileLevelTable g_h265_profile_levels[] =
 {
-    { MFX_OMX_VIDEO_HEVCProfileMain, MFX_OMX_VIDEO_HEVCMainTierLevel51 },
+    { MFX_OMX_VIDEO_HEVCProfileMain, MFX_OMX_VIDEO_HEVCMainTierLevel61 },
     { MFX_OMX_VIDEO_HEVCProfileMain10, MFX_OMX_VIDEO_HEVCMainTierLevel51 }
 #ifdef HEVC10HDR_SUPPORT
     ,{ MFX_OMX_VIDEO_HEVCProfileMain10HDR10, MFX_OMX_VIDEO_HEVCMainTierLevel51 }
@@ -70,7 +70,7 @@ static const MfxOmxProfileLevelTable g_h265_profile_levels[] =
 
 static const MfxOmxProfileLevelTable g_h265_ve_profile_levels[] =
 {
-    { MFX_OMX_VIDEO_HEVCProfileMain, MFX_OMX_VIDEO_HEVCMainTierLevel51 }
+    { MFX_OMX_VIDEO_HEVCProfileMain, MFX_OMX_VIDEO_HEVCMainTierLevel61 }
 };
 
 /*------------------------------------------------------------------------------*/

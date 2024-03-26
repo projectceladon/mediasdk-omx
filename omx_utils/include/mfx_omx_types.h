@@ -117,7 +117,8 @@ enum
 
 enum
 {
-    MFX_OMX_VIDEO_HEVCMainTierLevel51 = OMX_VIDEO_HEVCMainTierLevel51
+    MFX_OMX_VIDEO_HEVCMainTierLevel51 = OMX_VIDEO_HEVCMainTierLevel51,
+    MFX_OMX_VIDEO_HEVCMainTierLevel61 = OMX_VIDEO_HEVCMainTierLevel61
 };
 
 enum
@@ -168,6 +169,7 @@ union MfxOmxExtBuffer
     mfxExtEncoderResetOption reset;
     mfxExtAvcTemporalLayers tempLayers;
     mfxExtVP9Param vp9param;
+    mfxExtHEVCTiles hevcTiles;
     mfxExtVideoSignalInfo vsi;
     mfxExtEncoderROI roi;
 };
@@ -178,7 +180,7 @@ union MfxOmxExtBuffer
 
 /*------------------------------------------------------------------------------*/
 
-#define MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM 9
+#define MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM 10
 #define MFX_OMX_ENCODE_CTRL_EXTBUF_MAX_NUM 9
 
 #define MFX_OMX_ENCODE_EXTBUF_MAX_NUM MFX_OMX_MAX(MFX_OMX_ENCODE_VIDEOPARAM_EXTBUF_MAX_NUM, MFX_OMX_ENCODE_CTRL_EXTBUF_MAX_NUM)
@@ -345,6 +347,10 @@ struct MfxOmxParamsWrapper: public T
             ext_buf[idx].vp9param.Header.BufferId = MFX_EXTBUFF_VP9_PARAM;
             ext_buf[idx].vp9param.Header.BufferSz = sizeof(mfxExtVP9Param);
             return idx;
+          case MFX_EXTBUFF_HEVC_TILES:
+            ext_buf[idx].hevcTiles.Header.BufferId = MFX_EXTBUFF_HEVC_TILES;
+            ext_buf[idx].hevcTiles.Header.BufferSz = sizeof(mfxExtHEVCTiles);
+            return idx;
           default:
             // if we are here - that's a bug: add index to getEnabledMapIdx()
             return -1;
@@ -357,13 +363,14 @@ protected:
         int idx = 0;
         if (!N) return -1;
 
-        std::array<mfxU32, 8> mfxExtbufIds = {{
+        std::array<mfxU32, 9> mfxExtbufIds = {{
             MFX_EXTBUFF_CODING_OPTION,
             MFX_EXTBUFF_CODING_OPTION2,
             MFX_EXTBUFF_CODING_OPTION3,
             MFX_EXTBUFF_ENCODER_RESET_OPTION,
             MFX_EXTBUFF_AVC_TEMPORAL_LAYERS,
             MFX_EXTBUFF_VP9_PARAM,
+            MFX_EXTBUFF_HEVC_TILES,
             MFX_EXTBUFF_VIDEO_SIGNAL_INFO,
             MFX_EXTBUFF_ENCODER_ROI,
         }};
