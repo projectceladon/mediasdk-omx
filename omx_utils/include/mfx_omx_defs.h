@@ -65,6 +65,10 @@
     #include <ufo/graphics.h>
 #endif
 
+#ifdef ENABLE_DECVPP
+    #define OMX_ENABLE_DECVPP
+#endif
+
 #include <media/hardware/MetadataBufferType.h>
 #include <stdio.h>
 #include <stdlib.h>
