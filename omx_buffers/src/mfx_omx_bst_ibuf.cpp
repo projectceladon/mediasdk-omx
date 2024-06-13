@@ -749,6 +749,14 @@ mfxStatus MfxOmxAVCFrameConstructor::Load(mfxU8* data, mfxU32 size, mfxU64 pts, 
 
 /*------------------------------------------------------------------------------*/
 
+bool MfxOmxAVCFrameConstructor::IsValidHeaders()
+{
+    if (NULL == m_SPS.Data)
+        return false;
+
+    return true;
+}
+
 bool MfxOmxAVCFrameConstructor::IsSetInterlaceFlag(bool * bInterlaced)
 {
     MFX_OMX_AUTO_TRACE_FUNC();
