@@ -65,7 +65,7 @@ enum
     OMX_INTEL_COLOR_Format_P10 = HAL_PIXEL_FORMAT_P010_INTEL,            // 0x110
 };
 
-#ifdef MFX_OMX_USE_GRALLOC_1
+//#ifdef MFX_OMX_USE_GRALLOC_1
 
 #define MFX_OMX_MAX_NUM_OF_PLANES 4
 typedef struct intel_ufo_buffer_details_t
@@ -85,7 +85,7 @@ typedef struct intel_ufo_buffer_details_t
     uint32_t allocWidth;  // allocated buffer width in pixels.
     uint32_t allocHeight; // allocated buffer height in lines.
 } intel_ufo_buffer_details_t;
-#endif
+//#endif
 
 /* NOTE: at the moment there is no intersections with MFX defined memtypes... */
 enum
