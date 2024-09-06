@@ -39,6 +39,17 @@ enum MfxInitState {
     MFX_INIT_COMPLETED
 };
 
+#ifdef OMX_ENABLE_DECVPP
+#define DECODE_MAX_SRF_NUM 24
+#define VPP_MAX_SRF_NUM 10
+#define FIXED_VPP_OUTPUT
+#define SCALED_WIDTH 1920
+#define SCALED_HEIGHT 1080
+
+// round up to a multiple of 16
+#define MSDK_ALIGN16(value) (((value + 15) >> 4) << 4)
+#endif
+
 /*------------------------------------------------------------------------------*/
 
 class MfxOmxVdecComponent : public MfxOmxComponent,
@@ -161,6 +172,14 @@ protected:
     void UpdateHdrStaticInfo();
 #endif
 
+#ifdef OMX_ENABLE_DECVPP
+    mfxStatus InitVPP(void);
+    mfxStatus AllocateInternalSurfaces(void);
+    mfxStatus FreeInternalSurfaces(void);
+    mfxStatus FindOneAvailableSurface(mfxU32 &id);
+    mfxStatus ProcessFrameVpp(mfxFrameSurface1 *in_srf, mfxFrameSurface1 *out_srf);
+#endif
+
 protected:
     mfxIMPL m_Implementation;
     MFXVideoSession m_Session;
@@ -188,6 +207,18 @@ protected:
     bool m_bAllocateNativeHandle;
     bool m_bEnableNativeBuffersReceived;
     bool m_bInterlaced;
+
+#ifdef OMX_ENABLE_DECVPP
+    MFXVideoVPP *m_pVPP;
+    bool m_bInitVPP;
+    bool m_bVPPDetermined;
+    bool m_bEnableScale;
+    mfxU32 m_nScaledWidth;
+    mfxU32 m_nScaledHeight;
+    mfxVideoParam m_vppParam;
+    mfxFrameSurface1 m_DecInterSrf[DECODE_MAX_SRF_NUM];
+    mfxFrameAllocResponse m_DecResponses;
+#endif
 
     MfxInitState m_InitState;
     MfxOmxDev* m_pDevice;
