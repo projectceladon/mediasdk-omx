@@ -2466,8 +2466,8 @@ mfxStatus MfxOmxVencComponent::ProcessBuffer(void)
 
     {
         MfxOmxAutoLock lock(m_encoderMutex);
-        if (!m_bInitialized) mfx_res = InitEncoder();
         if ((MFX_ERR_NONE == mfx_res) && !m_bVppDetermined) mfx_res = InitVPP();
+        if (!m_bInitialized && m_bVppDetermined) mfx_res = InitEncoder();
     }
     if ((MFX_ERR_NONE == mfx_res) && !m_bChangeOutputPortSettings && m_bVppDetermined)
     {
@@ -2544,6 +2544,19 @@ mfxStatus MfxOmxVencComponent::InitEncoder(void)
             m_OmxMfxVideoParams.enableExtParam(MFX_EXTBUFF_AVC_TEMPORAL_LAYERS);
         }
 
+        if (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)
+        {
+            if (MFX_CODINGOPTION_ON == m_MfxVideoParams.mfx.LowPower)
+            {
+                 mfxFrameSurface1 *pSrf = m_pSurfaces->GetCustomBuffer();
+                 if (pSrf && (MFX_FOURCC_RGB4 == pSrf->Info.FourCC))
+                 {
+                     m_MfxVideoParams.mfx.FrameInfo.FourCC = MFX_FOURCC_RGB4;
+                     m_MfxVideoParams.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV444;
+                 }
+            }
+        }
+
         MFX_OMX_AT__mfxVideoParam_enc(m_MfxVideoParams);
 
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "AsyncDepth %d", m_MfxVideoParams.AsyncDepth);
@@ -2603,18 +2616,23 @@ mfxStatus MfxOmxVencComponent::InitVPP(void)
         MFX_OMX_AUTO_TRACE_I32(pSrf->Info.FourCC);
         if (MFX_FOURCC_RGB4 == pSrf->Info.FourCC)
         {
-            MfxOmxVppWrappParam param;
+            if ((MFX_CODINGOPTION_ON == m_MfxVideoParams.mfx.LowPower) &&
+                (MFX_CODEC_HEVC == m_MfxVideoParams.mfx.CodecId)) {
+                m_inputVppType = CONVERT_NONE;
+            } else {
+                MfxOmxVppWrappParam param;
 
-            param.session = &m_Session;
-            param.frame_info = &(pSrf->Info);
-            param.allocator = m_pDevice->GetFrameAllocator();
-            param.conversion = ARGB_TO_NV12;
+                param.session = &m_Session;
+                param.frame_info = &(pSrf->Info);
+                param.allocator = m_pDevice->GetFrameAllocator();
+                param.conversion = ARGB_TO_NV12;
 
-            MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "VPP initialization ...");
-            mfx_res = m_VPP.Init(&param);
-            MFX_OMX_AUTO_TRACE_I32(mfx_res);
-            MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "VPP initialized with sts %d", mfx_res);
-            m_inputVppType = param.conversion;
+                MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "VPP initialization ...");
+                mfx_res = m_VPP.Init(&param);
+                MFX_OMX_AUTO_TRACE_I32(mfx_res);
+                MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "VPP initialized with sts %d", mfx_res);
+                m_inputVppType = param.conversion;
+            }
         }
         else
         {
