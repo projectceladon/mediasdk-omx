@@ -181,6 +181,14 @@ extern "C" {
 
 #define MFX_OMX_UNUSED(x) (void)(x);
 
+#define MIN_WIDTH_4K 3840
+#define MIN_HEIGHT_4K 2160
+#define MIN_WIDTH_8K 7680
+#define MIN_HEIGHT_8K 4320
+
+#define IS_4K_VIDEO(W, H) (((W) >= MIN_WIDTH_4K && (W) < MIN_WIDTH_8K) || ((H) >= MIN_HEIGHT_4K && (H) < MIN_HEIGHT_8K))
+#define IS_8K_VIDEO(W, H) (((W) >= MIN_WIDTH_8K) || ((H) >= MIN_HEIGHT_8K))
+
 /*------------------------------------------------------------------------------*/
 /* WorkAround
 ** We need to reestablish exact input PTS on output port for pass some CTS test.

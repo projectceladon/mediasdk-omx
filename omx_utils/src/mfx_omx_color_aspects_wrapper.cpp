@@ -143,6 +143,8 @@ void MfxOmxColorAspectsWrapper::GetOutputColorAspects(android::ColorAspects &out
 
 void MfxOmxColorAspectsWrapper::GetColorAspectsFromVideoSignal(const mfxExtVideoSignalInfo &signalInfo, android::ColorAspects &outColorAspects)
 {
+    MFX_OMX_AUTO_TRACE_FUNC();
+
     bool video_signal_type_present_flag = signalInfo.VideoFormat != 5 ||
                                             signalInfo.VideoFullRange != 0 ||
 					                        signalInfo.ColourDescriptionPresent != 0;
