@@ -37,9 +37,6 @@ public:
     mfxStatus Alloc(const mfxU16 width, const mfxU16 height, buffer_handle_t *outHandle);
     mfxStatus Free(const buffer_handle_t handle);
 
-    mfxStatus ImportBuffer(const buffer_handle_t rawHandle, buffer_handle_t *outBuffer);
-    mfxStatus Release(buffer_handle_t bufferHandle);
-
     void RegisterBuffer(buffer_handle_t handle);
     void UnregisterBuffer(buffer_handle_t handle);
 
@@ -62,7 +59,6 @@ private:
 #endif
     GRALLOC1_PFN_GET_DIMENSIONS      m_grallocGetDimensions;
     GRALLOC1_PFN_ALLOCATE            m_grallocAllocate;
-    GRALLOC1_PFN_IMPORT_BUFFER       m_grallocImportBuffer;
     GRALLOC1_PFN_RELEASE             m_grallocRelease;
     GRALLOC1_PFN_LOCK                m_grallocLock;
     GRALLOC1_PFN_UNLOCK              m_grallocUnlock;
