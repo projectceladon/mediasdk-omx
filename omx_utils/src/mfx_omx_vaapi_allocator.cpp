@@ -89,14 +89,19 @@ unsigned int ConvertGrallocFourccToVAFormat(int fourcc)
         case HAL_PIXEL_FORMAT_NV12_Y_TILED_INTEL:
         case HAL_PIXEL_FORMAT_YUV420PackedSemiPlanar_Tiled_INTEL:
         case HAL_PIXEL_FORMAT_NV12_LINEAR_CAMERA_INTEL:
+            MFX_OMX_LOG_ERROR("yifang ConvertGrallocFourccToVAFormat will return format VA_FOURCC_NV12");
             return VA_FOURCC_NV12;
         case HAL_PIXEL_FORMAT_P010_INTEL:
+            MFX_OMX_LOG_ERROR("yifang ConvertGrallocFourccToVAFormat will return format VA_FOURCC_P010");
             return VA_FOURCC_P010;
         case HAL_PIXEL_FORMAT_RGBA_8888:
+            MFX_OMX_LOG_ERROR("yifang ConvertGrallocFourccToVAFormat will return format VA_FOURCC_RGBA");
             return VA_FOURCC_RGBA;
         case HAL_PIXEL_FORMAT_RGBX_8888:
+            MFX_OMX_LOG_ERROR("yifang ConvertGrallocFourccToVAFormat will return format VA_FOURCC_RGBX");
             return VA_FOURCC_RGBX;
         case HAL_PIXEL_FORMAT_BGRA_8888:
+            MFX_OMX_LOG_ERROR("yifang ConvertGrallocFourccToVAFormat will return format VA_FOURCC_RGBA");
             return VA_FOURCC_BGRA;
         default:
             return 0;
@@ -115,12 +120,15 @@ mfxU32 ConvertVAFourccToVARTFormat(mfxU32 va_fourcc)
     {
         case VA_FOURCC_NV12:
         case VA_FOURCC_YV12:
+            MFX_OMX_LOG_ERROR("yifang ConvertVAFourccToVARTFormat will return VA_RT_FORMAT_YUV420");
             return VA_RT_FORMAT_YUV420;
         case VA_FOURCC_RGBA:
         case VA_FOURCC_BGRA:
         case VA_FOURCC_RGBX:
+            MFX_OMX_LOG_ERROR("yifang ConvertVAFourccToVARTFormat will return VA_RT_FORMAT_RGB32");
             return VA_RT_FORMAT_RGB32;
         case VA_FOURCC_P010:
+            MFX_OMX_LOG_ERROR("yifang ConvertVAFourccToVARTFormat will return VA_RT_FORMAT_YUV420_10BPP");
             return VA_RT_FORMAT_YUV420_10BPP;
         default:
             return 0;
@@ -548,6 +556,9 @@ mfxStatus MfxOmxVaapiFrameAllocator::CreateSurfaceFromGralloc(const mfxU8* handl
     attribs[1].flags = VA_SURFACE_ATTRIB_SETTABLE;
     attribs[1].value.type = VAGenericValueTypePointer;
     attribs[1].value.value.p = (void *)&surfExtBuf;
+
+    MFX_OMX_LOG_ERROR("yifang: vaCreateSurfaces weight %d, height %d", width, height);
+
 
     VAStatus va_res = vaCreateSurfaces(m_dpy, rt_format,
         width, height,
