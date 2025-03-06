@@ -81,6 +81,9 @@ MfxOmxFrameAllocator::MfxOmxFrameAllocator()
     allocator.GetHDL = _wrapper_get_hdl;
 
     MFX_OMX_ZERO_MEMORY(m_DecoderResponse);
+#ifdef OMX_ENABLE_DECVPP
+    MFX_OMX_ZERO_MEMORY(m_VPPResponse);
+#endif
 }
 
 MfxOmxFrameAllocator::~MfxOmxFrameAllocator()
@@ -108,6 +111,63 @@ mfxStatus MfxOmxFrameAllocator::AllocFrames(mfxFrameAllocRequest *pRequest, mfxF
     if (MFX_ERR_NONE == mfx_res) mfx_res = CheckRequestType(pRequest);
     if (MFX_ERR_NONE == mfx_res)
     {
+#ifdef OMX_ENABLE_DECVPP
+        bool bDecoderResponse = (pRequest->Type & MFX_MEMTYPE_FROM_DECODE);
+        bool bVPPResponse = (pRequest->Type & MFX_MEMTYPE_FROM_VPPOUT) &&
+                            (pRequest->Type & MFX_MEMTYPE_EXTERNAL_FRAME);
+        ALOGI("%s, bDecoderResponse = %d, NumFrameSuggested = %d, NumFrameActual= %d, bVPPResponse=%d, NumFrameActual= %d", __func__, 
+			bDecoderResponse, pRequest->NumFrameSuggested, m_DecoderResponse.response.NumFrameActual,
+			bVPPResponse, m_VPPResponse.response.NumFrameActual);
+
+        if (bDecoderResponse)
+        {
+            if (0 != m_DecoderResponse.response.NumFrameActual)
+            {
+                if (pRequest->NumFrameSuggested > m_DecoderResponse.response.NumFrameActual)
+                {
+                    mfx_res = MFX_ERR_MEMORY_ALLOC;
+                }
+                else
+                {
+                    *pResponse = m_DecoderResponse.response;
+                }
+            }
+            else
+            {
+                mfx_res = AllocImpl(pRequest, pResponse);
+                if (MFX_ERR_NONE == mfx_res)
+                {
+                    m_DecoderResponse.response = *pResponse;
+                }
+            }
+
+            if (MFX_ERR_NONE == mfx_res) ++(m_DecoderResponse.refcount);
+        }
+        else
+        {
+            if (bVPPResponse && (0 != m_VPPResponse.response.NumFrameActual))
+            {
+                if (pRequest->NumFrameSuggested > m_VPPResponse.response.NumFrameActual)
+                {
+                    mfx_res = MFX_ERR_MEMORY_ALLOC;
+                }
+                else
+                {
+                    *pResponse = m_VPPResponse.response;
+                }
+            }
+            else
+            {
+                mfx_res = AllocImpl(pRequest, pResponse);
+                if (bVPPResponse && MFX_ERR_NONE == mfx_res)
+                {
+                    m_VPPResponse.response = *pResponse;
+                }
+            }
+
+            if ((MFX_ERR_NONE == mfx_res) && bVPPResponse) ++(m_VPPResponse.refcount);
+        }
+#else
         bool bDecoderResponse = (pRequest->Type & MFX_MEMTYPE_EXTERNAL_FRAME) &&
                                 (pRequest->Type & MFX_MEMTYPE_FROM_DECODE);
 
@@ -131,6 +191,7 @@ mfxStatus MfxOmxFrameAllocator::AllocFrames(mfxFrameAllocRequest *pRequest, mfxF
             }
         }
         if ((MFX_ERR_NONE == mfx_res) && bDecoderResponse) ++(m_DecoderResponse.refcount);
+#endif
     }
 
     return mfx_res;
@@ -149,5 +210,16 @@ mfxStatus MfxOmxFrameAllocator::FreeFrames(mfxFrameAllocResponse *pResponse)
 
         MFX_OMX_ZERO_MEMORY(m_DecoderResponse);
     }
+#ifdef OMX_ENABLE_DECVPP
+    if (!memcmp(pResponse, &(m_VPPResponse.response), sizeof(mfxFrameAllocResponse)))
+    {
+        if (!m_VPPResponse.refcount) return MFX_ERR_UNKNOWN; // should not occur, just in case
+
+        --(m_VPPResponse.refcount);
+        if (m_VPPResponse.refcount) return MFX_ERR_NONE;
+
+        MFX_OMX_ZERO_MEMORY(m_VPPResponse);
+    }
+#endif
     return ReleaseResponse(pResponse);
 }

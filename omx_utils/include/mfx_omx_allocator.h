@@ -56,6 +56,9 @@ protected: //functions
 
 protected: // variables
     MfxOmxFrameAllocResponse m_DecoderResponse;
+#ifdef OMX_ENABLE_DECVPP
+    MfxOmxFrameAllocResponse m_VPPResponse;
+#endif
 
 private:
     MFX_OMX_CLASS_NO_COPY(MfxOmxFrameAllocator)

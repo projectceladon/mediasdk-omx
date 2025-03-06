@@ -23,6 +23,7 @@
 #include "mfx_omx_vdec_component.h"
 #include "mfx_omx_vaapi_allocator.h"
 #include <chrono>
+#include <cutils/properties.h>
 /*------------------------------------------------------------------------------*/
 
 #undef MFX_OMX_MODULE_NAME
@@ -115,6 +116,33 @@ MfxOmxVdecComponent::MfxOmxVdecComponent(OMX_ERRORTYPE &error,
 #ifdef HEVC10HDR_SUPPORT
     MFX_OMX_ZERO_MEMORY(m_SeiHDRStaticInfo);
 #endif
+
+#ifdef OMX_ENABLE_DECVPP
+    m_pVPP = NULL;
+    m_bEnableScale = true;
+    m_bInitVPP = false;
+    m_bVPPDetermined = false;
+    m_nScaledWidth = SCALED_WIDTH;
+    m_nScaledHeight = SCALED_HEIGHT;
+#ifdef FIXED_VPP_OUTPUT
+    char szWidth[128] = {'\0'};
+    char szHeight[128] = {'\0'};
+    if (property_get("omx.scaled.width", szWidth, 0))
+    {
+        m_nScaledWidth = atoi(szWidth);
+    }
+    if (property_get("omx.scaled.height", szHeight, 0))
+    {
+        m_nScaledHeight = atoi(szHeight);
+    }
+    if (!m_nScaledWidth) m_nScaledWidth = SCALED_WIDTH;
+    if (!m_nScaledHeight) m_nScaledHeight = SCALED_HEIGHT;
+#endif
+
+    MFX_OMX_ZERO_MEMORY(m_vppParam);
+    MFX_OMX_ZERO_MEMORY(m_DecInterSrf);
+    MFX_OMX_ZERO_MEMORY(m_DecResponses);
+#endif
 }
 
 /*------------------------------------------------------------------------------*/
@@ -129,6 +157,9 @@ MfxOmxVdecComponent::~MfxOmxVdecComponent(void)
     MFX_OMX_DELETE(m_pOmxBitstream);
     MFX_OMX_DELETE(m_pSurfaces);
     MFX_OMX_DELETE(m_pDEC);
+#ifdef OMX_ENABLE_DECVPP
+    MFX_OMX_DELETE(m_pVPP);
+#endif
     m_Session.Close();
 
     MFX_OMX_DELETE(m_pDevice);
@@ -169,6 +200,15 @@ OMX_ERRORTYPE MfxOmxVdecComponent::Init(void)
             MFX_OMX_NEW(m_pDEC, MFXVideoDECODE(m_Session));
             if (!m_pDEC) sts = MFX_ERR_MEMORY_ALLOC;
         }
+
+#ifdef OMX_ENABLE_DECVPP
+        // vpp creation
+        if (MFX_ERR_NONE == sts && m_bEnableScale)
+        {
+            MFX_OMX_NEW(m_pVPP, MFXVideoVPP(m_Session));
+            if(!m_pVPP) sts = MFX_ERR_MEMORY_ALLOC;
+        }
+#endif
         if (MFX_ERR_NONE != sts) error = ErrorStatusMfxToOmx(sts);
     }
     if ((OMX_ErrorNone == error) && (MFX_IMPL_SOFTWARE != m_Implementation))
@@ -471,6 +511,19 @@ OMX_ERRORTYPE MfxOmxVdecComponent::MfxVideoParams_2_PortsParams(void)
         nFrameWidth = m_nMaxFrameWidth = m_decVideoProc.Out.Width;
         nFrameHeight = m_nMaxFrameHeight = m_decVideoProc.Out.Height;
     }
+#ifdef OMX_ENABLE_DECVPP
+    else if (m_bEnableScale)
+    {
+#ifdef FIXED_VPP_OUTPUT
+        nFrameWidth = m_nMaxFrameWidth = m_nScaledWidth;
+        nFrameHeight = m_nMaxFrameHeight = m_nScaledHeight;
+#else
+        nFrameWidth = m_nMaxFrameWidth = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+        nFrameHeight = m_nMaxFrameHeight = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+        m_bVPPDetermined = true;
+    }
+#endif
     else if (m_bLegacyAdaptivePlayback)
     {
         if (m_nMaxFrameWidth >= m_MfxVideoParams.mfx.FrameInfo.Width) nFrameWidth = m_nMaxFrameWidth;
@@ -484,8 +537,13 @@ OMX_ERRORTYPE MfxOmxVdecComponent::MfxVideoParams_2_PortsParams(void)
     if (m_bChangeOutputPortSettings)
     {
         m_pOutPortDef->bPopulated = OMX_FALSE;
+#ifdef OMX_ENABLE_DECVPP
+        m_pOutPortDef->nBufferCountMin = m_bEnableScale ? VPP_MAX_SRF_NUM : m_nSurfacesNumMin;
+        m_pOutPortDef->nBufferCountActual = m_bEnableScale ? VPP_MAX_SRF_NUM : m_nSurfacesNum;
+#else
         m_pOutPortDef->nBufferCountMin = m_nSurfacesNumMin;
         m_pOutPortDef->nBufferCountActual = m_nSurfacesNum;
+#endif
     }
 
     if (m_pDevice && !m_bUseSystemMemory)
@@ -749,7 +807,26 @@ OMX_ERRORTYPE MfxOmxVdecComponent::FillThisBuffer(
 
     if (OMX_ErrorNone == omx_res)
     {
+#ifdef OMX_ENABLE_DECVPP
+        mfxFrameInfo allocFrameInfo = m_MfxVideoParams.mfx.FrameInfo;
+        if (m_bEnableScale && m_bVPPDetermined)
+        {
+#ifdef FIXED_VPP_OUTPUT
+            allocFrameInfo.Width = MSDK_ALIGN16(m_nScaledWidth);
+            allocFrameInfo.Height = MSDK_ALIGN16(m_nScaledHeight);
+            allocFrameInfo.CropW = m_nScaledWidth;
+            allocFrameInfo.CropH = m_nScaledHeight;
+#else
+            allocFrameInfo.Width = m_MfxVideoParams.mfx.FrameInfo.Width * 2;
+            allocFrameInfo.Height = m_MfxVideoParams.mfx.FrameInfo.Height * 2;
+            allocFrameInfo.CropW = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+            allocFrameInfo.CropH = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+        }
+        mfxStatus mfx_res = m_pSurfaces->UseBuffer(pBuffer, allocFrameInfo, m_bChangeOutputPortSettings);
+#else
         mfxStatus mfx_res = m_pSurfaces->UseBuffer(pBuffer, m_MfxVideoParams.mfx.FrameInfo, m_bChangeOutputPortSettings);
+#endif
         if (MFX_ERR_NONE == mfx_res)
         {
             m_pCommandsSemaphore->Post();
@@ -791,7 +868,20 @@ OMX_ERRORTYPE MfxOmxVdecComponent::GetParameter(
                         OMX_PARAM_PORTDEFINITIONTYPE & port = m_pPorts[pParam->nPortIndex]->m_port_def;
                         *pParam = port;
                         m_Crops = m_MfxVideoParams.mfx.FrameInfo;
-
+#ifdef OMX_ENABLE_DECVPP
+                        if (m_bEnableScale && m_bVPPDetermined)
+                        {
+#ifdef FIXED_VPP_OUTPUT
+                            m_Crops.CropW = m_nScaledWidth;
+                            m_Crops.CropH = m_nScaledHeight;
+#else
+                            m_Crops.CropX = m_MfxVideoParams.mfx.FrameInfo.CropX * 2;
+                            m_Crops.CropY = m_MfxVideoParams.mfx.FrameInfo.CropY * 2;
+                            m_Crops.CropW = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+                            m_Crops.CropH = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+                        }
+#endif
                         MFX_OMX_AT__OMX_PARAM_PORTDEFINITIONTYPE(port);
                         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "GetParameter(ParamPortDefinition) nPortIndex %d, nBufferCountMin %d, nBufferCountActual %d, nBufferSize %d, nFrameWidth %d, nFrameHeight %d",
                                             port.nPortIndex, port.nBufferCountMin, port.nBufferCountActual, port.nBufferSize, port.format.video.nFrameWidth, port.format.video.nFrameHeight);
@@ -1029,10 +1119,15 @@ OMX_ERRORTYPE MfxOmxVdecComponent::SetParameter(
                                                                         OMX_INTEL_COLOR_Format_NV12);
                         }
                         MFX_OMX_AUTO_TRACE_I32(m_bUseSystemMemory);
-
+#ifdef OMX_ENABLE_DECVPP
+                        mfx_omx_adjust_port_definition(m_pOutPortDef, m_bEnableScale ? NULL : &m_MfxVideoParams.mfx.FrameInfo,
+                                                       m_bOnFlySurfacesAllocation,
+                                                       m_bANWBufferInMetaData);
+#else
                         mfx_omx_adjust_port_definition(m_pOutPortDef, &m_MfxVideoParams.mfx.FrameInfo,
                                                        m_bOnFlySurfacesAllocation,
                                                        m_bANWBufferInMetaData);
+#endif
                     }
                     else
                     {
@@ -1816,6 +1911,20 @@ OMX_ERRORTYPE MfxOmxVdecComponent::CommandPortEnable(OMX_U32 nPortIndex)
             m_bChangeOutputPortSettings = false;
         }
         m_Crops = m_MfxVideoParams.mfx.FrameInfo;
+#ifdef OMX_ENABLE_DECVPP
+        if (m_bEnableScale && m_bVPPDetermined)
+        {
+#ifdef FIXED_VPP_OUTPUT
+            m_Crops.CropW = m_nScaledWidth;
+            m_Crops.CropH = m_nScaledHeight;
+#else
+            m_Crops.CropX = m_MfxVideoParams.mfx.FrameInfo.CropX * 2;
+            m_Crops.CropY = m_MfxVideoParams.mfx.FrameInfo.CropY * 2;
+            m_Crops.CropW = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+            m_Crops.CropH = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+        }
+#endif
         m_pOutPortInfo->bEnable = false;
         m_pCallbacks->EventHandler(m_self, m_pAppData, OMX_EventCmdComplete, (OMX_U32)OMX_CommandPortEnable, m_pOutPortDef->nPortIndex, NULL);
         MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Enabling output port completed");
@@ -1964,6 +2073,12 @@ void MfxOmxVdecComponent::MainThread(void)
                 if (MFX_ERR_NONE != mfx_sts) m_Error = mfx_sts;
 
                 m_bEosHandlingStarted = false;
+#ifdef OMX_ENABLE_DECVPP
+                if (MFX_ERR_NONE == mfx_sts && !m_bInitVPP)
+                {
+                    mfx_sts = InitVPP();
+                }
+#endif
             }
 
             if ((MFX_ERR_NONE == m_Error) && !m_bEosHandlingStarted)
@@ -2014,6 +2129,12 @@ void MfxOmxVdecComponent::MainThread(void)
                                     MFX_OMX_AUTO_TRACE("Failed to reinit codec");
                                     m_Error = mfx_sts;
                                 }
+#ifdef OMX_ENABLE_DECVPP
+                                if (m_bEnableScale)
+                                {
+                                    FreeInternalSurfaces();
+                                }
+#endif
                                 break; // need to handle m_commands
                             }
                         }
@@ -2326,6 +2447,136 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
     }
     if (MFX_INIT_DECODER == m_InitState)
     {
+#ifdef OMX_ENABLE_DECVPP
+        if (m_bEnableScale)
+        {
+            if (MFX_ERR_NONE == mfx_res)
+            {
+                AllocateInternalSurfaces();
+
+                if (!m_bOnFlySurfacesAllocation)
+                {
+                    mfx_res = m_pDEC->Init(&m_MfxVideoParams);
+                }
+                else
+                {
+                    MFX_OMX_ZERO_MEMORY(m_adaptivePlayback);
+                    m_adaptivePlayback.BufferId = MFX_EXTBUFF_DEC_ADAPTIVE_PLAYBACK;
+                    m_adaptivePlayback.BufferSz = sizeof(mfxExtBuffer);
+
+                    m_extBuffers.push_back(reinterpret_cast<mfxExtBuffer*>(&m_adaptivePlayback));
+                    m_MfxVideoParams.NumExtParam = m_extBuffers.size();
+                    m_MfxVideoParams.ExtParam = &m_extBuffers.front();
+
+                    mfx_res = m_pDEC->Init(&m_MfxVideoParams);
+
+                    m_extBuffers.pop_back();
+                    m_MfxVideoParams.NumExtParam--;
+                }
+                MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Decoder initialized with sts %d", mfx_res);
+                ALOGI("%s. Decoder initialized with sts %d", __func__, mfx_res);
+
+                if (MFX_WRN_PARTIAL_ACCELERATION == mfx_res)
+                {
+                    MFX_OMX_LOG_INFO("MFX_WRN_PARTIAL_ACCELERATION");
+                    mfx_res = MFX_ERR_NONE;
+                }
+                else if (MFX_WRN_INCOMPATIBLE_VIDEO_PARAM == mfx_res)
+                {
+                    MFX_OMX_AUTO_TRACE_MSG("MFX_WRN_INCOMPATIBLE_VIDEO_PARAM was received");
+                    mfx_res = MFX_ERR_NONE;
+                }
+
+                if (MFX_ERR_NONE != mfx_res) MFX_OMX_LOG_ERROR("Init failed - %s", mfx_omx_code_to_string(mfx_res));
+            }
+            if (MFX_ERR_NONE == mfx_res)
+            {
+                mfx_res = m_pDEC->GetVideoParam(&m_MfxVideoParams);
+            }
+            if (MFX_ERR_NONE == mfx_res)
+            {
+                m_InitState = MFX_INIT_COMPLETED;
+            }
+            MFX_OMX_AT__mfxVideoParam_dec(m_MfxVideoParams);
+
+            mfxU32 i = 0;
+            mfxFrameAllocator* pAllocator = NULL;
+            MfxOmxVaapiFrameAllocator* pvaAllocator = NULL;
+
+            mfxFrameInfo allocFrameInfo = m_MfxVideoParams.mfx.FrameInfo;
+            if (m_nMaxFrameWidth > allocFrameInfo.Width)
+            {
+                allocFrameInfo.Width = m_nMaxFrameWidth;
+            }
+            if (m_nMaxFrameHeight > allocFrameInfo.Height)
+            {
+                allocFrameInfo.Height = m_nMaxFrameHeight;
+            }
+#ifdef FIXED_VPP_OUTPUT
+            allocFrameInfo.Width = MSDK_ALIGN16(m_nScaledWidth);
+            allocFrameInfo.Height = MSDK_ALIGN16(m_nScaledHeight);
+            allocFrameInfo.CropW = m_nScaledWidth;
+            allocFrameInfo.CropH = m_nScaledHeight;
+#else
+            allocFrameInfo.Width = m_MfxVideoParams.mfx.FrameInfo.Width * 2;
+            allocFrameInfo.Height = m_MfxVideoParams.mfx.FrameInfo.Height * 2;
+            allocFrameInfo.CropW = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+            allocFrameInfo.CropH = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+            MFX_OMX_AUTO_TRACE_I32(m_bUseSystemMemory);
+            if (m_pDevice && !m_bUseSystemMemory)
+            {
+                if ((MFX_ERR_NONE == mfx_res) && !m_pBufferHeaders) mfx_res = MFX_ERR_NULL_PTR;
+                if (MFX_ERR_NONE == mfx_res)
+                {
+                    pAllocator = m_pDevice->GetFrameAllocator();
+                    if (pAllocator) pvaAllocator = (MfxOmxVaapiFrameAllocator*)pAllocator;
+                    else mfx_res = MFX_ERR_UNKNOWN;
+                }
+                if (MFX_ERR_NONE == mfx_res)
+                    m_pSurfaces->SetFrameAllocator(pAllocator);
+
+                for (i = 0; (MFX_ERR_NONE == mfx_res) && (i < m_pOutPortDef->nBufferCountActual); ++i)
+                {
+                    if (MFX_ERR_NONE == mfx_res)
+                    {
+                        MfxOmxBufferInfo* pAddBufInfo = NULL;
+                        pAddBufInfo = (MfxOmxBufferInfo*)m_pBufferHeaders[i]->pOutputPortPrivate;
+
+                        mfx_res = pvaAllocator->LoadSurface(m_bOnFlySurfacesAllocation ? NULL : (buffer_handle_t)m_pBufferHeaders[i]->pBuffer,
+                                                            true, allocFrameInfo,
+                                                            &pAddBufInfo->sSurface.Data.MemId);
+                    }
+                }
+                // Frame allocator initialization (if needed)
+                if (MFX_ERR_NONE == mfx_res)
+                {
+                    mfxFrameAllocRequest request;
+                    MFX_OMX_ZERO_MEMORY(request);
+                    MFX_OMX_ZERO_MEMORY(m_AllocResponse);
+                    request.Info = allocFrameInfo;
+                    request.Type = MFX_MEMTYPE_EXTERNAL_FRAME | MFX_MEMTYPE_FROM_VPPOUT |
+                                   MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET |
+                                   MFX_OMX_MEMTYPE_GRALLOC;
+                    request.NumFrameMin = request.NumFrameSuggested = m_pOutPortDef->nBufferCountActual;
+
+                    mfx_res = pAllocator->Alloc(pAllocator->pthis, &request, &m_AllocResponse);
+                }
+                if ((MFX_ERR_NONE == mfx_res) && (m_pOutPortDef->nBufferCountActual != m_AllocResponse.NumFrameActual))
+                {
+                    mfx_res = MFX_ERR_MEMORY_ALLOC;
+                }
+            }
+            MFX_OMX_AUTO_TRACE_MSG("PrepareSurfaces");
+            for (i = 0; (MFX_ERR_NONE == mfx_res) && (i < m_pOutPortDef->nBufferCountActual); ++i)
+            {
+                mfx_res = m_pSurfaces->PrepareSurface(m_pBufferHeaders[i], &(allocFrameInfo),
+                                                      (!m_bUseSystemMemory) ? m_AllocResponse.mids[i]: NULL);
+            }
+        }
+        else
+        {
+#endif
         MFX_OMX_AUTO_TRACE("MFX_INIT_DECODER");
         mfxU32 i = 0;
         mfxFrameAllocator* pAllocator = NULL;
@@ -2385,7 +2636,6 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
             mfx_res = m_pSurfaces->PrepareSurface(m_pBufferHeaders[i], &(allocFrameInfo),
                                                   (!m_bUseSystemMemory) ? m_AllocResponse.mids[i]: NULL);
         }
-
         if (MFX_ERR_NONE == mfx_res)
         {
             if (!m_bOnFlySurfacesAllocation)
@@ -2431,6 +2681,9 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
             m_InitState = MFX_INIT_COMPLETED;
         }
         MFX_OMX_AT__mfxVideoParam_dec(m_MfxVideoParams);
+#ifdef OMX_ENABLE_DECVPP
+        }
+#endif
     }
     if (MFX_ERR_MORE_DATA != mfx_res)
     {
@@ -2443,6 +2696,9 @@ mfxStatus MfxOmxVdecComponent::InitCodec(void)
                     m_nSurfacesNumMin > m_pOutPortDef->nBufferCountMin ||
                     m_nSurfacesNum > m_pOutPortDef->nBufferCountActual ||
                     m_bLegacyAdaptivePlayback ||
+#ifdef OMX_ENABLE_DECVPP
+                    m_bEnableScale ||
+#endif
                     m_bEnableVP)
                 {
                     m_bChangeOutputPortSettings = true;
@@ -2702,6 +2958,20 @@ mfxStatus MfxOmxVdecComponent::ReinitCodec(void)
                 m_MfxVideoParams = newVideoParams;
                 MfxVideoParams_2_PortsParams();
                 m_Crops = m_MfxVideoParams.mfx.FrameInfo;
+#ifdef OMX_ENABLE_DECVPP
+                if (m_bEnableScale && m_bVPPDetermined)
+                {
+#ifdef FIXED_VPP_OUTPUT
+                    m_Crops.CropW = m_nScaledWidth;
+                    m_Crops.CropH = m_nScaledHeight;
+#else
+                    m_Crops.CropX = m_MfxVideoParams.mfx.FrameInfo.CropX * 2;
+                    m_Crops.CropY = m_MfxVideoParams.mfx.FrameInfo.CropY * 2;
+                    m_Crops.CropW = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+                    m_Crops.CropH = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+                }
+#endif
             }
             MFX_OMX_AUTO_TRACE_MSG("Sending OMX_EventPortSettingsChanged to OMAX client: OMX_IndexConfigCommonOutputCrop");
             MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "Requesting change of output port crop");
@@ -2842,6 +3112,9 @@ void MfxOmxVdecComponent::CloseCodec(void)
     MFX_OMX_AUTO_TRACE_FUNC();
 
     if (m_pDEC) m_pDEC->Close();
+#ifdef OMX_ENABLE_DECVPP
+    if (m_pVPP) m_pVPP->Close();
+#endif
     if (m_pOmxBitstream)
     {
         m_pOmxBitstream->Reset();
@@ -2865,6 +3138,12 @@ void MfxOmxVdecComponent::CloseCodec(void)
         mfxFrameAllocator* pAllocator = m_pDevice->GetFrameAllocator();
         if (pAllocator) pAllocator->Free(pAllocator->pthis, &m_AllocResponse);
         MFX_OMX_ZERO_MEMORY(m_AllocResponse);
+#ifdef OMX_ENABLE_DECVPP
+        if (m_bEnableScale)
+        {
+            FreeInternalSurfaces();
+        }
+#endif
     }
 
     do
@@ -2883,6 +3162,145 @@ void MfxOmxVdecComponent::CloseCodec(void)
     m_bChangeOutputPortSettings = false;
 }
 
+/*-----------------------------------------------------------------------------*/
+#ifdef OMX_ENABLE_DECVPP
+mfxStatus MfxOmxVdecComponent::InitVPP(void)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    mfxStatus mfx_res = MFX_ERR_NONE;
+
+    MFX_OMX_ZERO_MEMORY(m_vppParam);
+    m_vppParam.AsyncDepth = 1;
+    m_vppParam.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY | MFX_IOPATTERN_OUT_VIDEO_MEMORY;
+    m_vppParam.vpp.In = m_MfxVideoParams.mfx.FrameInfo;
+    m_vppParam.vpp.Out = m_MfxVideoParams.mfx.FrameInfo;
+#ifdef FIXED_VPP_OUTPUT
+    m_vppParam.vpp.Out.Width = MSDK_ALIGN16(m_nScaledWidth);
+    m_vppParam.vpp.Out.Height = MSDK_ALIGN16(m_nScaledHeight);
+    m_vppParam.vpp.Out.CropW = m_nScaledWidth;
+    m_vppParam.vpp.Out.CropH = m_nScaledHeight;
+#else
+    m_vppParam.vpp.Out.Width = m_MfxVideoParams.mfx.FrameInfo.Width * 2;
+    m_vppParam.vpp.Out.Height = m_MfxVideoParams.mfx.FrameInfo.Height * 2;
+    m_vppParam.vpp.Out.CropW = m_MfxVideoParams.mfx.FrameInfo.CropW * 2;
+    m_vppParam.vpp.Out.CropH = m_MfxVideoParams.mfx.FrameInfo.CropH * 2;
+#endif
+    mfx_res = m_pVPP->Init(&m_vppParam);
+
+    ALOGI("%s, vpp.in.w=%d,vpp.in.h=%d,vpp.in.cw=%d,vpp.in.ch=%d, vpp.out.w=%d,vpp.out.h=%d,vpp.out.cw=%d,vpp.out.ch=%d, mfx_res=%d",
+          __func__, m_vppParam.vpp.In.Width, m_vppParam.vpp.In.Height,
+          m_vppParam.vpp.In.CropW, m_vppParam.vpp.In.CropH,
+          m_vppParam.vpp.Out.Width,m_vppParam.vpp.Out.Height,
+          m_vppParam.vpp.Out.CropW, m_vppParam.vpp.Out.CropH, mfx_res);
+
+    m_bInitVPP = true;
+
+    MFX_OMX_AUTO_TRACE_I32(mfx_res);
+    return mfx_res;
+}
+
+mfxStatus MfxOmxVdecComponent::AllocateInternalSurfaces(void)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    mfxStatus sts = MFX_ERR_NONE;
+
+    ALOGI("%s, fourCC = 0x%x", __func__, m_MfxVideoParams.mfx.FrameInfo.FourCC);;
+
+    mfxFrameAllocator *allocator = m_pDevice->GetFrameAllocator();
+
+    if (allocator)
+    {
+        mfxFrameAllocRequest request;
+        MFX_OMX_ZERO_MEMORY(request);
+        request.Info = m_MfxVideoParams.mfx.FrameInfo;
+        request.NumFrameMin = DECODE_MAX_SRF_NUM;
+        request.NumFrameSuggested = DECODE_MAX_SRF_NUM;
+        request.Type = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET | MFX_MEMTYPE_FROM_DECODE;
+        sts = allocator->Alloc(allocator->pthis, &request, &m_DecResponses);
+        ALOGI("%s, allocator->Alloc returned %d", __func__, sts);
+
+        if (MFX_ERR_NONE == sts)
+        {
+            for (int i = 0; i < DECODE_MAX_SRF_NUM; i++)
+            {
+                MFX_OMX_ZERO_MEMORY(m_DecInterSrf[i]);
+                m_DecInterSrf[i].Info = m_MfxVideoParams.mfx.FrameInfo;
+                m_DecInterSrf[i].Data.MemId = m_DecResponses.mids[i];
+            }
+        }
+    }
+
+    MFX_OMX_AUTO_TRACE_I32(sts);
+    return sts;
+}
+
+mfxStatus MfxOmxVdecComponent::FreeInternalSurfaces(void)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    mfxStatus sts = MFX_ERR_NONE;
+
+    mfxFrameAllocator *allocator = m_pDevice->GetFrameAllocator();
+
+    if (allocator)
+    {
+        sts = allocator->Free(allocator->pthis, &m_DecResponses);
+        if (sts == MFX_ERR_NONE)
+        {
+            MFX_OMX_ZERO_MEMORY(m_DecInterSrf);
+            MFX_OMX_ZERO_MEMORY(m_DecResponses);
+        }
+    }
+
+    m_bInitVPP = false;
+
+    ALOGI("%s", __func__);
+
+    MFX_OMX_AUTO_TRACE_I32(sts);
+    return sts;
+}
+
+
+mfxStatus MfxOmxVdecComponent::FindOneAvailableSurface(mfxU32 &id)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    mfxStatus mfx_res = MFX_ERR_NONE;
+
+    mfxU32 i = 0;
+    for (i = 0; i < DECODE_MAX_SRF_NUM; i++)
+    {
+        if (false == m_DecInterSrf[i].Data.Locked)
+        {
+            id = i;
+            break;
+        }
+    }
+
+    if (i == DECODE_MAX_SRF_NUM)
+    {
+        ALOGE("%s, cannot find available surface for decoding!!!", __func__);
+        mfx_res = MFX_ERR_MORE_SURFACE;
+    }
+
+    //ALOGI("%s, id = %d, returned %d", __func__, i, mfx_res);
+    return mfx_res;
+}
+
+mfxStatus MfxOmxVdecComponent::ProcessFrameVpp(mfxFrameSurface1 *in_srf, mfxFrameSurface1 *out_srf)
+{
+    MFX_OMX_AUTO_TRACE_FUNC();
+    mfxStatus sts = MFX_ERR_NONE;
+    mfxSyncPoint syncp;
+    //ALOGI("%s, in_srf=%p, out_srf=%p", __func__, in_srf, out_srf);
+
+    if (!in_srf || !out_srf) return MFX_ERR_UNKNOWN;
+
+    sts = m_pVPP->RunFrameVPPAsync(in_srf, out_srf, NULL, &syncp);
+    if (MFX_ERR_NONE == sts) sts = m_Session.SyncOperation(syncp, MFX_OMX_INFINITE);
+
+    MFX_OMX_AUTO_TRACE_I32(sts);
+    return sts;
+}
+#endif
 /*------------------------------------------------------------------------------*/
 
 bool MfxOmxVdecComponent::CanDecode(void)
@@ -2909,6 +3327,9 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
     MFX_OMX_AUTO_TRACE_FUNC();
     mfxStatus mfx_res = MFX_ERR_NONE;
     mfxFrameSurface1 *pWorkSurface = NULL, *pOutSurface = NULL;
+#ifdef OMX_ENABLE_DECVPP
+    mfxFrameSurface1 *pVPPInSurface = NULL, *pVPPOutSurface = NULL;
+#endif
     mfxSyncPoint* pSyncPoint = NULL;
 
     MFX_OMX_AUTO_TRACE_P(m_pBitstream);
@@ -2937,6 +3358,10 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
 
         pOutSurface = NULL;
         pWorkSurface = m_pSurfaces->GetBuffer();
+#ifdef OMX_ENABLE_DECVPP
+        pVPPInSurface = NULL;
+        pVPPOutSurface = pWorkSurface;
+#endif
         MFX_OMX_AUTO_TRACE_P(pWorkSurface);
         if (NULL == pWorkSurface && !bIsFlushingWithoutWorkSurf)
         {
@@ -2971,6 +3396,16 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
             if (m_pBitstream) MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "DecodeFrameAsync+ DataLength %d, DataOffset %d", m_pBitstream->DataLength, m_pBitstream->DataOffset);
             else MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "DecodeFrameAsync(NULL)+");
 
+#ifdef OMX_ENABLE_DECVPP
+            if (m_bEnableScale && m_bInitVPP)
+            {
+                mfxU32 id = 0;
+                mfx_res = FindOneAvailableSurface(id);
+                if (mfx_res != MFX_ERR_NONE) break;
+
+                pWorkSurface = &m_DecInterSrf[id];
+            }
+#endif
             mfx_res = m_pDEC->DecodeFrameAsync(m_pBitstream, pWorkSurface, &pOutSurface, pSyncPoint);
 
             if (m_pBitstream) MFX_OMX_LOG_INFO_IF(g_OmxLogLevel, "DecodeFrameAsync- sts %d, output surface %p, DataLength %d, DataOffset %d",
@@ -3046,8 +3481,25 @@ mfxStatus MfxOmxVdecComponent::DecodeFrame(void)
                 }
                 if (MFX_ERR_NONE == mfx_res)
                 {
+#ifdef OMX_ENABLE_DECVPP
+                    if (m_bEnableScale)
+                    {
+                        pVPPInSurface = pOutSurface;
+                        mfx_res = ProcessFrameVpp(pVPPInSurface, pVPPOutSurface);
+                        ALOGI("%s, pVPPInSurface=%p, pVPPOut=%p, ProcessFrameVpp returned %d", __func__,
+                              pVPPInSurface, pVPPOutSurface, mfx_res);
+                        if (mfx_res != MFX_ERR_NONE || pVPPOutSurface == NULL) break;
+
+                        mfx_res = m_pSurfaces->QueueBufferForSending(pVPPOutSurface, pSyncPoint);
+                    }
+                    else
+                    {
+#endif
                     // searching for buffer which corresponds to the surface
                     mfx_res = m_pSurfaces->QueueBufferForSending(pOutSurface, pSyncPoint);
+#ifdef OMX_ENABLE_DECVPP
+                    }
+#endif
                     if (MFX_ERR_NONE != mfx_res)
                     {
                         /* NOTE: that's workaround for the VC1 skipped frames support.
