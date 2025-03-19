@@ -28,6 +28,8 @@
 #include "mfx_omx_dev.h"
 #include "mfx_omx_color_aspects_wrapper.h"
 
+//#define HEVC_8K_DEBUG
+
 /*------------------------------------------------------------------------------*/
 
 class MfxOmxVencComponent : public MfxOmxComponent,
@@ -173,6 +175,11 @@ protected:
     mfxEncodeCtrl& m_MfxEncodeCtrl;
 
     MfxOmxInputConfig m_NextConfig;
+
+#ifdef HEVC_8K_DEBUG
+    uint32_t m_AsyncDepth;
+    uint32_t m_InputBufNum;
+#endif
 
     OMX_VIDEO_CONTROLRATETYPE m_eOmxControlRate;
 

@@ -481,6 +481,10 @@ mfxU32 GetBufferSize(mfxVideoParam const & par)
             ? mfxU32(MFX_OMX_MIN(UINT_MAX, par.mfx.FrameInfo.Width * par.mfx.FrameInfo.Height * 3 / 2))
             : bufferSizeInBits / 8;
     }
+    else if (MFX_CODEC_HEVC == par.mfx.CodecId)
+    {
+        bufferSize = par.mfx.FrameInfo.Width * par.mfx.FrameInfo.Height * 3 / 2 / 8;
+    }
     else
         bufferSize = mfxU32(MFX_OMX_MIN(UINT_MAX, par.mfx.FrameInfo.Width * par.mfx.FrameInfo.Height * 3 / 2));
 
