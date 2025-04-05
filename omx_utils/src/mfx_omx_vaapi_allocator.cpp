@@ -583,25 +583,14 @@ mfxStatus MfxOmxVaapiFrameAllocator::LoadGrallocBuffer(const mfxU8* handle, cons
 
     mfxU8 *img = NULL;
     bool bIsLocked = false;
-    bool bIsImported = false;
-    buffer_handle_t bufferHandle;
 
-    mfx_res = m_pGralloc->ImportBuffer((buffer_handle_t)handle, &bufferHandle);
-    if (MFX_ERR_NONE == mfx_res)
-    {
-        bIsImported = true;
-    }
-    else
-    {
-        MFX_OMX_AUTO_TRACE_MSG("Failed to import buffer");
-    }
-    mfx_res = m_pGralloc->GetInfo(bufferHandle, &info);
+    mfx_res = m_pGralloc->GetInfo((buffer_handle_t)handle, &info);
     if (MFX_ERR_NONE == mfx_res)
     {
         MFX_OMX_AUTO_TRACE_I32(info.width);
         MFX_OMX_AUTO_TRACE_I32(info.height);
 
-        mfx_res = m_pGralloc->Lock(bufferHandle, info.width, info.height, GRALLOC_USAGE_HW_VIDEO_ENCODER, &img);
+        mfx_res = m_pGralloc->Lock((buffer_handle_t)handle, info.width, info.height, GRALLOC_USAGE_HW_VIDEO_ENCODER, &img);
         if (MFX_ERR_NONE == mfx_res)
         {
             bIsLocked = true;
@@ -668,11 +657,7 @@ mfxStatus MfxOmxVaapiFrameAllocator::LoadGrallocBuffer(const mfxU8* handle, cons
 
     if (bIsLocked)
     {
-        m_pGralloc->Unlock(bufferHandle);
-    }
-    if (bIsImported)
-    {
-	m_pGralloc->Release(bufferHandle);
+        m_pGralloc->Unlock((buffer_handle_t)handle);
     }
 
     MFX_OMX_AUTO_TRACE_I32(mfx_res);

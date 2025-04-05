@@ -32,7 +32,6 @@ MfxOmxGrallocAdapter::MfxOmxGrallocAdapter()
 #endif
     , m_grallocGetDimensions(NULL)
     , m_grallocAllocate(NULL)
-    , m_grallocImportBuffer(NULL)
     , m_grallocRelease(NULL)
     , m_grallocLock(NULL)
     , m_grallocUnlock(NULL)
@@ -107,10 +106,6 @@ mfxStatus MfxOmxGrallocAdapter::Init()
                 (GRALLOC1_PFN_LOCK)               m_pGralloc1Dev->getFunction(m_pGralloc1Dev, GRALLOC1_FUNCTION_LOCK);
             m_grallocUnlock =
                 (GRALLOC1_PFN_UNLOCK)             m_pGralloc1Dev->getFunction(m_pGralloc1Dev, GRALLOC1_FUNCTION_UNLOCK);
-            m_grallocImportBuffer =
-                (GRALLOC1_PFN_IMPORT_BUFFER)      m_pGralloc1Dev->getFunction(m_pGralloc1Dev, GRALLOC1_FUNCTION_IMPORT_BUFFER);
-            m_grallocRelease =
-                (GRALLOC1_PFN_RELEASE)            m_pGralloc1Dev->getFunction(m_pGralloc1Dev, GRALLOC1_FUNCTION_RELEASE);
 
             if (!m_grallocGetFormat        ||
                 !m_grallocGetNumFlexPlanes ||
@@ -122,9 +117,7 @@ mfxStatus MfxOmxGrallocAdapter::Init()
                 !m_grallocAllocate         ||
                 !m_grallocRelease          ||
                 !m_grallocLock             ||
-                !m_grallocUnlock           ||
-                !m_grallocImportBuffer     ||
-                !m_grallocRelease)
+                !m_grallocUnlock)
             {
                 gralloc1_close(m_pGralloc1Dev);
                 m_pGralloc1Dev = NULL;
@@ -278,32 +271,6 @@ mfxStatus MfxOmxGrallocAdapter::Unlock(buffer_handle_t handle)
     m_pGrallocModule->unlock(m_pGrallocModule, handle);
 #endif
 
-    MFX_OMX_AUTO_TRACE_I32(mfx_res);
-    return mfx_res;
-}
-
-mfxStatus MfxOmxGrallocAdapter::ImportBuffer(const buffer_handle_t rawHandle, buffer_handle_t *outBuffer)
-{
-    MFX_OMX_AUTO_TRACE_FUNC();
-    mfxStatus mfx_res = MFX_ERR_NONE;
-#ifdef MFX_OMX_USE_GRALLOC_1
-    m_grallocImportBuffer(m_pGralloc1Dev, rawHandle, outBuffer);
-#else
-    *outBuffer = native_handle_clone(rawHandle);
-#endif
-    MFX_OMX_AUTO_TRACE_I32(mfx_res);
-    return mfx_res;
-}
-mfxStatus MfxOmxGrallocAdapter::Release(buffer_handle_t bufferHandle)
-{
-    MFX_OMX_AUTO_TRACE_FUNC();
-    mfxStatus mfx_res = MFX_ERR_NONE;
-#ifdef MFX_OMX_USE_GRALLOC_1
-    m_grallocRelease(m_pGralloc1Dev, bufferHandle);
-#else
-    native_handle_close(bufferHandle);
-    native_handle_delete(bufferHandle);
-#endif
     MFX_OMX_AUTO_TRACE_I32(mfx_res);
     return mfx_res;
 }
