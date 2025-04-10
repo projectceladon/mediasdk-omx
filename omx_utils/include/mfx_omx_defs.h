@@ -61,8 +61,11 @@
     #include <i915_private_android_types.h>
     #include <cros_gralloc_types.h>
 #else
-    #include <ufo/gralloc.h>
-    #include <ufo/graphics.h>
+    #define DRV_I915
+    #include <cros_gralloc_types.h>
+    #include <i915_private_android_types.h>
+    //#include <ufo/gralloc.h>
+    //#include <ufo/graphics.h>
 #endif
 
 #include <media/hardware/MetadataBufferType.h>
